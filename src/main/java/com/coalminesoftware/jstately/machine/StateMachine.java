@@ -126,7 +126,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 	}
 
 	/** Follows the given transition without checking its validity.  In the process, it calls {@link State#onExit()}
-	 * on the current state, followed by {@link Transition#onTransition()} on the given transition, followed by
+	 * on the current state, followed by {@link Transition#onTransition(Object)} on the given transition, followed by
 	 * {@link State#onEnter()} on the machine's updated current state.
 	 * 
 	 * @param transition Transition to follow.
