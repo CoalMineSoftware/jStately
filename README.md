@@ -18,7 +18,7 @@ arbitrary business logic. But the provided `EqualityTransition` implementation
 will appeal to users whose transitions are based simply on whether an input is
 equal to a particular expected value.
 
-Although jStately does not aim to implement to a particular formal definition
+Although jStately does not aim to implement a particular formal definition
 of a state machine, many common features are present. For example, a
 `CompositeState` defines a collection of states and/or nested
 `CompositeState`s, similar to hierarchical nested states in UML.
@@ -61,7 +61,7 @@ public class GhostStateGraph extends StateGraph<GameEvent> {
 ```
 
 `StateGraph`s define the relationship between its states but it is a
-`StateMachine` that _has_ state and evaluates inputs in order to traverse the
+`StateMachine` that has state and evaluates inputs in order to traverse the
 graph. To use the graph defined above, a developer might initialize a
 `StateMachine` like this:
 
@@ -73,9 +73,9 @@ machine.start();
 ```
 
 As the game continues and it is determined that important things have happened
-(i.e., things that might cause the machine to transition states, according to
-our graph,) an event can be evaluated by the machine with a call to
-`machine.evaluateInput(GameEvent.PACMAN_SPOTTED)`.
+(i.e., things that may or may not cause the machine to transition states,
+according to our graph,) an event can be evaluated by the machine with a call
+to `machine.evaluateInput(GameEvent.PACMAN_SPOTTED)`.
 
 But a graph with no behavior isn't all that interesting. Suppose that a
 developer wants certain things to happen as the machine transitions between
@@ -116,10 +116,11 @@ Sometimes it's useful to define a graph that is reused within another graph. In
 these cases, a `SubmachineState` can be used. A submachine state is initialized
 with a graph that has the same input type as its parent graph. When a state
 machine enters a submachine state, it creates a new state machine internally
-and `evaluateInput()` calls are delegated to the child state machine until it
-reaches a special `State` subclass – `FinalState`. When that happens, the value
-returned by the final state's `getResult()` method is evaluated on the parent
-state machine, allowing it to transition out of the submachine state.
+and future `evaluateInput()` calls are delegated to the child state machine
+until it reaches a special `State` subclass – `FinalState`. When that happens,
+the value returned by the final state's `getResult()` method is evaluated on
+the parent state machine, allowing it to transition out of the submachine
+state.
 
 There is no set limit on how deeply nested state graphs can be using
 `SubmachineState`.
