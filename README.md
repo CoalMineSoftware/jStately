@@ -118,9 +118,9 @@ with a graph that has the same input type as its parent graph. When a state
 machine enters a submachine state, it creates a new state machine internally
 and future `evaluateInput()` calls are delegated to the child state machine
 until it reaches a special `State` subclass – `FinalState`. When that happens,
-the value returned by the final state's `getResult()` method is evaluated on
-the parent state machine, allowing it to transition out of the submachine
-state.
+the value returned by the final state's `getResult()` method is evaluated as an
+input to the parent state machine, allowing it to transition out of the
+submachine state.
 
 There is no set limit on how deeply nested state graphs can be using
 `SubmachineState`.
