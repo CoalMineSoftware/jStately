@@ -12,14 +12,14 @@ It was written with OOD principles and extensibility in mind. Users build
 `StateGraph`s made up primarily of `State`s and `Transition`s, implementing
 methods for events like entering a state, exiting a state or following a
 transition. jStately relies heavily on interfaces but also provides sensible
-default implementations. For example, a user could implementation a
-`Transition` that determines whether it is valid for a given input based on
-arbitrary business logic. But the provided `EqualityTransition` implementation
-will appeal to users whose transitions are based simply on whether an input is
-equal to a particular expected value.
+default implementations. For example, a user could implement a `Transition`
+that determines whether it is valid for a given input based on arbitrary
+business logic. But the provided `EqualityTransition` implementation will
+appeal to users whose transitions are based simply on whether an input is equal
+to a particular expected value.
 
-Although jStately does not aim to implement a particular formal definition
-of a state machine, many common features are present. For example, a
+Although jStately does not aim to implement a particular defintion of a state
+machine, features from common definitions are present. For example, a
 `CompositeState` defines a collection of states and/or nested
 `CompositeState`s, similar to hierarchical nested states in UML.
 Composite states can have their own entry and exit behavior, as well as
@@ -36,7 +36,7 @@ diagram of a ghost's behavior might look like this:
 
 ![Pac-Man Ghost state graph](readme/PacManGhostStateGraph.png) 
 
-Its implementation using jStately would look something like this:
+Its implementation using jStately might look something like this:
 
 ```java
 public class GhostStateGraph extends StateGraph<GameEvent> {
@@ -60,10 +60,10 @@ public class GhostStateGraph extends StateGraph<GameEvent> {
 } 
 ```
 
-`StateGraph`s define the relationship between its states but it is a
-`StateMachine` that has state and evaluates inputs in order to traverse the
-graph. To use the graph defined above, a developer might initialize a
-`StateMachine` like this:
+A `StateGraph` defines the relationship between its states but it is a
+`StateMachine` that _has_ state and evaluates inputs in order to traverse the
+graph. To use the graph defined above, a `StateMachine` could be initialized
+with this code:
 
 ```java
 StateMachine<GameEvent, GameEvent> machine = new StateMachine<>(
