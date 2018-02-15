@@ -180,6 +180,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 
 			newState.onEnter();
 			currentState = newState;
+			newState.afterStateEntered();
 
 			for(StateMachineEventListener<TransitionInput> listener : eventListeners) {
 				listener.afterStateEntered(newState, this);

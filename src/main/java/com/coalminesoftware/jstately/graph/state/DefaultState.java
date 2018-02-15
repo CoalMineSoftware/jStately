@@ -17,8 +17,13 @@ public class DefaultState<TransitionInput> implements State<TransitionInput> {
 		this.description = description;
 	}
 
+	@Override
 	public void onEnter() { }
 
+	@Override
+	public void afterStateEntered() { }
+
+	@Override
 	public void onExit() { }
 
 	@Override

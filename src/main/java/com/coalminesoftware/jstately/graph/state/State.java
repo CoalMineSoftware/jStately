@@ -13,6 +13,9 @@ public interface State<TransitionInput> {
 	/** Called by a state machine when the machine enters the state. */
 	void onEnter();
 
+	/** Called by a state machine after the machine has entered the state */
+	void afterStateEntered();
+
 	/** Called by a state machine when the machine exits the state. */
 	void onExit();
 }
