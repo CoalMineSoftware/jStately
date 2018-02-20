@@ -1,11 +1,5 @@
 package com.coalminesoftware.jstately.integration;
 
-import static org.junit.Assert.*;
-
-import java.util.Arrays;
-
-import org.junit.Test;
-
 import com.coalminesoftware.jstately.graph.StateGraph;
 import com.coalminesoftware.jstately.graph.state.DefaultState;
 import com.coalminesoftware.jstately.graph.state.DefaultSubmachineState;
@@ -16,6 +10,11 @@ import com.coalminesoftware.jstately.test.DefaultTransition;
 import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
 import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
+import org.junit.Test;
+
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 
 public class SubmachineTransitionTest {
 	@Test

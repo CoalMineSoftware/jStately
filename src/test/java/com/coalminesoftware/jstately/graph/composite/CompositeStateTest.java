@@ -1,18 +1,17 @@
 package com.coalminesoftware.jstately.graph.composite;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
-import java.util.Arrays;
-import java.util.Collections;
-
-import org.junit.Test;
-
 import com.coalminesoftware.jstately.collection.CollectionUtil;
 import com.coalminesoftware.jstately.graph.state.DefaultState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.test.DefaultTransition;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class CompositeStateTest {
 	@Test

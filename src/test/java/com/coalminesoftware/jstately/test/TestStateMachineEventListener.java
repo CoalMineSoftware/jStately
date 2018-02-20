@@ -1,13 +1,5 @@
 package com.coalminesoftware.jstately.test;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-
 import com.coalminesoftware.jstately.collection.CollectionUtil;
 import com.coalminesoftware.jstately.graph.composite.CompositeState;
 import com.coalminesoftware.jstately.graph.state.State;
@@ -15,6 +7,14 @@ import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.machine.StateMachine;
 import com.coalminesoftware.jstately.machine.listener.DefaultStateMachineEventListener;
 import com.coalminesoftware.jstately.machine.listener.StateMachineEventListener;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /** {@link StateMachineEventListener} implementation for use in test cases.  This listener stores events that occur,
  * allowing users to assert that a certain sequence of events occurred, using {@link #assertEventsOccurred(Event...)}. */
@@ -48,21 +48,10 @@ public class TestStateMachineEventListener<TransitionInput> extends DefaultState
 		clearObservedEvents();
 	}
 
-	/** Asserts that the given Event happened */
-	public void assertEventOccurred(boolean ignoreMachine, Event expectedEvent) {
-		for(Event observedEvent : observedEvents) {
-			if(eventAreEqual(ignoreMachine, expectedEvent, observedEvent)) {
-				return;
-			}
-		}
-
-		fail("The expected event was not observed");
-	}
-
 	/** Asserts that the given Event happened, ignoring the machine on which the event occurred */
 	public void assertEventOccurred(Event expectedEvent) {
 		for(Event observedEvent : observedEvents) {
-			if(eventAreEqual(true, expectedEvent, observedEvent)) {
+			if(areEventsEqual(true, expectedEvent, observedEvent)) {
 				return;
 			}
 		}
@@ -80,7 +69,7 @@ public class TestStateMachineEventListener<TransitionInput> extends DefaultState
 		}
 
 		for(int i=0; i<firstEvents.size(); i++) {
-			if(!eventAreEqual(ignoreMachine, firstEvents.get(i), secondEvents.get(i))) {
+			if(!areEventsEqual(ignoreMachine, firstEvents.get(i), secondEvents.get(i))) {
 				return false;
 			}
 		}
@@ -88,7 +77,7 @@ public class TestStateMachineEventListener<TransitionInput> extends DefaultState
 		return true;
 	}
 
-	private boolean eventAreEqual(boolean ignoreMachine, Event firstEvent, Event secondEvent) {
+	private boolean areEventsEqual(boolean ignoreMachine, Event firstEvent, Event secondEvent) {
 		boolean typesEqual = firstEvent.getType().equals(secondEvent.getType());
 
 		boolean valuesEqual = firstEvent.getValue()==null?

@@ -124,15 +124,3 @@ submachine state.
 
 There is no set limit on how deeply nested state graphs can be using
 `SubmachineState`.
-
-Limitation
-----------
-
-One scenario that jStately does not currently handle is when an input is
-evaluated on a machine while it is transitioning. This is most commonly the
-result of a `Transition#onTransition()` override that inadvertently calls
-`StateMachine#evaluateInput()`. Because the machine is in between two states
-when `onTransition()` is called, there is no "current" state to search for
-transitions that would be valid for the new input. This may be addressed in the
-future by queueing inputs that are evaluated while the machine is in between
-states.

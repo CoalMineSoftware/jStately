@@ -7,9 +7,12 @@ import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 
 
-/** Defines a superstate that wraps multiple child states, allowing API users to define behavior for when the group is
- * entered or exited.  Composite states can also have transitions, which can be traversed from any of the child states
- * if none of their transitions are valid for a given input but the composite state's transition is. */
+/**
+ * Defines a superstate that wraps multiple child states, allowing API users to define behavior for
+ * when the group is entered or exited.  Composite states can also have transitions, which can be
+ * traversed from any of the child states if none of their transitions are valid for a given input
+ * but the composite state's transition is.
+ */
 public class CompositeState<TransitionInput> {
 	private CompositeState<TransitionInput> parent;
 	private Set<Transition<TransitionInput>> transitions = new HashSet<>();

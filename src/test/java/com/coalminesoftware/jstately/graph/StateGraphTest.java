@@ -1,16 +1,15 @@
 package com.coalminesoftware.jstately.graph;
 
-import static org.junit.Assert.*;
-
-import org.junit.Test;
-
-import com.coalminesoftware.jstately.graph.StateGraph;
 import com.coalminesoftware.jstately.graph.composite.CompositeState;
 import com.coalminesoftware.jstately.graph.state.DefaultFinalState;
 import com.coalminesoftware.jstately.graph.state.DefaultState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.test.DefaultTransition;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class StateGraphTest {
 	@Test(expected=IllegalArgumentException.class)

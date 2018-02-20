@@ -1,11 +1,10 @@
 package com.coalminesoftware.jstately.graph.transition;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import com.coalminesoftware.jstately.collection.CollectionUtil;
 import org.junit.Test;
 
-import com.coalminesoftware.jstately.collection.CollectionUtil;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DisjunctiveEqualityTransitionTest {
 	@Test

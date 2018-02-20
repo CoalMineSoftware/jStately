@@ -46,8 +46,10 @@ public class StateGraph<TransitionInput> {
 		transitionsByTail.put(transition.getHead(),transition);
 	}
 
-	/** Adds a transitions that will be evaluated if no valid transition is found for the given
-	 * input from the current state or enclosing CompositeState. */
+	/**
+	 * Adds a transitions that will be evaluated if no valid transition is found for the given
+	 * input from the current state or enclosing CompositeState.
+	 */
 	public void addGlobalTransition(Transition<TransitionInput> transition) {
 		transitionsByTail.put(GLOBAL_TRANSITION_KEY, transition);
 	}

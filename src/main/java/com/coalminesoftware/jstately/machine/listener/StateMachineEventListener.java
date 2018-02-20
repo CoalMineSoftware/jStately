@@ -5,7 +5,10 @@ import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.machine.StateMachine;
 
-/** Listener than can be registered with {@link StateMachine#addEventListener(StateMachineEventListener)} to be notified of events that happen. */
+/**
+ * Listener than can be registered with {@link StateMachine#addEventListener(StateMachineEventListener)}
+ * to be notified of events that happen.
+ */
 public interface StateMachineEventListener<TransitionInput> {
 	/** Called before a state machine begins evaluating an input */
 	void beforeEvaluatingInput(TransitionInput input, StateMachine<?,TransitionInput> machine);

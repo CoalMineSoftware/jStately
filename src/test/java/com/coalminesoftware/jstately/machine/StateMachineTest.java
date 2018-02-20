@@ -1,23 +1,16 @@
 package com.coalminesoftware.jstately.machine;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-
-import org.junit.Test;
-
 import com.coalminesoftware.jstately.graph.StateGraph;
 import com.coalminesoftware.jstately.graph.state.DefaultState;
 import com.coalminesoftware.jstately.graph.state.DefaultSubmachineState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.EqualityTransition;
-import com.coalminesoftware.jstately.test.Event;
-import com.coalminesoftware.jstately.test.EventType;
-import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
-import com.coalminesoftware.jstately.test.TwoStateStateGraph;
-import com.coalminesoftware.jstately.test.TwoStateStateGraphWithSubmachineState;
+import com.coalminesoftware.jstately.test.*;
+import org.junit.Test;
+
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 public class StateMachineTest {
 	@Test(expected=IllegalStateException.class)
@@ -53,30 +46,13 @@ public class StateMachineTest {
 	}
 
 	@Test(expected=IllegalStateException.class)
-	public void testEvaluateInputWithoutInputAdapter() {
+	public void testEvaluateInputWithoutInputAdapter() throws InterruptedException {
 		StateMachine<Object,Object> machine = new StateMachine<>();
 		machine.evaluateInput(null);
 	}
 
 	@Test
-	public void testEvaluateInputWithoutValidTransition() {
-		StateGraph<Integer> graph = new StateGraph<>();
-
-		State<Integer> startState = new DefaultState<>();
-		graph.setStartState(startState);
-
-		State<Integer> intermediateState = new DefaultState<>();
-		graph.addTransition(startState, new EqualityTransition<>(intermediateState, 1));
-
-		StateMachine<Integer,Integer> machine = new StateMachine<>(graph, new DefaultInputAdapter<Integer>());
-		machine.start();
-
-		assertTrue("Method should return false if no transitions are valid for any of the given input(s).",
-				machine.evaluateInput(0));
-	}
-
-	@Test
-	public void testEvaluateInputWhileInSubmachineState() {
+	public void testEvaluateInputWhileInSubmachineState() throws InterruptedException {
 		// Test scenario where the machine is in a submachine state when evaluateInput()
 		// is called, in which case it should delegate the input to the submachine.
 
@@ -216,7 +192,7 @@ public class StateMachineTest {
 	}
 
 	@Test
-	public void testEvaluateInputWithNullInput() {
+	public void testEvaluateInputWithNullInput() throws InterruptedException {
 		StateGraph<Integer> graph = new StateGraph<>();
 
 		State<Integer> stateS = new DefaultState<>("S");

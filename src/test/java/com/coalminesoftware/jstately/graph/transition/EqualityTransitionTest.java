@@ -1,11 +1,9 @@
 package com.coalminesoftware.jstately.graph.transition;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 
-import com.coalminesoftware.jstately.graph.transition.EqualityTransition;
-import com.coalminesoftware.jstately.graph.transition.Transition;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class EqualityTransitionTest {
 	@Test

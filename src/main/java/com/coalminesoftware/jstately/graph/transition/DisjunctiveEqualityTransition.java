@@ -5,7 +5,10 @@ import java.util.Set;
 import com.coalminesoftware.jstately.collection.CollectionUtil;
 import com.coalminesoftware.jstately.graph.state.State;
 
-/** Transition implementation that is valid if any one of its <code>validInputs</code> values is equal to the transition input. */
+/**
+ * Transition implementation that is valid if any one of its <code>validInputs</code> values is
+ * equal to the transition input.
+ */
 public class DisjunctiveEqualityTransition<TransitionInput> extends AbstractTransition<TransitionInput> implements Transition<TransitionInput> {
 	private Set<TransitionInput> validInputs;
 

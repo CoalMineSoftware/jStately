@@ -15,6 +15,8 @@ import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
 import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
 
+import static org.junit.Assert.assertEquals;
+
 public class IntegrationTest {
 	private static State<Integer> stateA;
 	private static State<Integer> stateB;
@@ -37,7 +39,7 @@ public class IntegrationTest {
 	private static StateGraph<Integer> graph;
 
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	public static void setUpBeforeClass() {
 		graph = new StateGraph<>();
 
 		stateA = new DefaultState<>("State A");
@@ -77,7 +79,7 @@ public class IntegrationTest {
 	}
 
 	@Test
-	public void testStateMachineStateTransitioning() {
+	public void testStateMachineStateTransitioning() throws InterruptedException {
 		StateMachine<Integer,Integer> machine = new StateMachine<>(graph, new DefaultInputAdapter<Integer>());
 
 		TestStateMachineEventListener<Integer> listener = new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
@@ -119,7 +121,7 @@ public class IntegrationTest {
 	}
 
 	@Test
-	public void testStateMachineStateTransitionPrecedence() {
+	public void testStateMachineStateTransitionPrecedence() throws InterruptedException {
 		StateMachine<Integer,Integer> machine = new StateMachine<>(graph, new DefaultInputAdapter<Integer>());
 		machine.transition(stateB);
 
@@ -133,5 +135,39 @@ public class IntegrationTest {
 		listener.clearObservedEvents();
 		machine.evaluateInput(100);
 		listener.assertEventOccurred(Event.forTransitionFollowed(transitionXA));
+	}
+
+	@Test
+	public void testRecursiveEvaluation() throws InterruptedException {
+		// Defines a graph with a transition that evaluates another input. This tests that the
+		// machine is able to queue the subsequent input rather than trying evaluate it
+		// immediately.
+
+		StateGraph<Integer> graph = new StateGraph<>();
+		final StateMachine<Integer, Integer> machine = new StateMachine<>(
+				graph, new DefaultInputAdapter<Integer>());
+
+		State<Integer> stateA = new DefaultState<>("A");
+		graph.setStartState(stateA);
+
+		State<Integer> stateB = new DefaultState<>("B");
+		graph.addTransition(stateA, new EqualityTransition<Integer>(stateB, 1) {
+			@Override
+			public void onTransition(Integer integer) {
+				try {
+					machine.evaluateInput(2);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
+
+		State<Integer> stateC = new DefaultState<>("C");
+		graph.addTransition(stateB, new EqualityTransition<>(stateC, 2));
+
+		machine.start();
+		machine.evaluateInput(1);
+
+		assertEquals(stateC, machine.getState());
 	}
 }
