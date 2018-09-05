@@ -1,6 +1,5 @@
 package com.coalminesoftware.jstately.graph.state;
 
-
 /** Basic {@link FinalState} implementation that allows for a fixed value to be used as the state's result. */
 public class DefaultFinalState<Result> extends DefaultState<Result> implements FinalState<Result> {
 	private Result result;

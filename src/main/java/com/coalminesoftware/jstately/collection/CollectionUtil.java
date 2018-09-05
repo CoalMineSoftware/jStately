@@ -12,9 +12,7 @@ public final class CollectionUtil {
 	/** @return A mutable Set with the given values. */
 	public static <T> Set<T> asMutableSet(T... values) {
 		Set<T> valueSet = new HashSet<>();
-		for(T value : values) {
-			valueSet.add(value);
-		}
+		Collections.addAll(valueSet, values);
 
 		return valueSet;
 	}

@@ -13,10 +13,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
-/** {@link StateMachineEventListener} implementation for use in test cases.  This listener stores events that occur,
+/** {@link StateMachineEventListener} implementation for use in test cases. This listener stores events that occur,
  * allowing users to assert that a certain sequence of events occurred, using {@link #assertEventsOccurred(Event...)}. */
 public class TestStateMachineEventListener<TransitionInput> extends DefaultStateMachineEventListener<TransitionInput> {
 	private List<Event> observedEvents = new ArrayList<>();
@@ -31,7 +32,7 @@ public class TestStateMachineEventListener<TransitionInput> extends DefaultState
 		}
 	}
 
-	/** Asserts that the given Events (and only the given Events) occurred in the given order.  Keep in
+	/** Asserts that the given Events (and only the given Events) occurred in the given order. Keep in
 	 * mind that the observed Events are limited to the EventTypes given when constructing the listener. */
 	public void assertEventsOccurred(Event... expectedEvents) {
 		assertEventsOccurred(true, expectedEvents);
@@ -39,16 +40,17 @@ public class TestStateMachineEventListener<TransitionInput> extends DefaultState
 
 	/** Asserts that the given Events (and only the given Events) occurred in the given order. Keep
 	 * in mind that the observed Events are limited to the EventTypes given when constructing the
-	 * listener.  This method also clears the list of observed events after making the assertion. */
+	 * listener. This method also clears the list of observed events after making the assertion. */
 	public void assertEventsOccurred(boolean ignoreMachine, Event... expectedEvents) {
 		List<Event> expectedEventList = Arrays.asList(expectedEvents);
-		assertTrue("The exact sequence of expected events was not observed.  Expected: "+expectedEventList+" but was: "+observedEvents,
-				testEventListEquality(ignoreMachine, expectedEventList, observedEvents));
+		assertThat("The exact sequence of expected events was not observed. Expected: " + expectedEventList + " but was: " + observedEvents,
+				testEventListEquality(ignoreMachine, expectedEventList, observedEvents),
+				is(true));
 
 		clearObservedEvents();
 	}
 
-	/** Asserts that the given Event happened, ignoring the machine on which the event occurred */
+	/** Asserts that the given Event happened, ignoring the machine on which the event occurred. */
 	public void assertEventOccurred(Event expectedEvent) {
 		for(Event observedEvent : observedEvents) {
 			if(areEventsEqual(true, expectedEvent, observedEvent)) {

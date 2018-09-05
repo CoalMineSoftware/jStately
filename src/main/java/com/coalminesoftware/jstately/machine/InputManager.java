@@ -3,6 +3,8 @@ package com.coalminesoftware.jstately.machine;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import static com.coalminesoftware.jstately.ParameterValidation.assertNotNull;
+
 /**
  * Handles the queueing of machine inputs to a {@link StateMachine} and conversion to transition
  * inputs using the {@link InputAdapter} provided to the machine.
@@ -47,6 +49,7 @@ class InputManager<MachineInput, TransitionInput> {
 	}
 
 	public void setInputAdapter(InputAdapter<MachineInput, TransitionInput> adapter) {
+		assertNotNull("An adapter is required", adapter);
 		this.adapter = adapter;
 	}
 

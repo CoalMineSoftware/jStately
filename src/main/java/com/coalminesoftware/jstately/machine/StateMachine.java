@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import static com.coalminesoftware.jstately.ParameterValidation.assertNotNull;
+
 /** Representation of a state machine. */
 public class StateMachine<MachineInput,TransitionInput> {
 	protected StateGraph<TransitionInput> stateGraph;
@@ -26,9 +28,17 @@ public class StateMachine<MachineInput,TransitionInput> {
 
 	protected StateMachine<TransitionInput,TransitionInput> submachine;
 
-	public StateMachine() { }
+	/**
+	 * Instantiate a machine with the same input type as its graph’s transitions, and a
+	 * {@link DefaultInputAdapter} instance as its adapter.
+	 */
+	public static <T> StateMachine<T, T> newStateMachine(StateGraph<T> stateGraph) {
+		return new StateMachine<>(stateGraph, new DefaultInputAdapter<T>());
+	}
 
 	public StateMachine(StateGraph<TransitionInput> stateGraph, InputAdapter<MachineInput,TransitionInput> inputAdapter) {
+		assertNotNull("A state graph is required.", stateGraph);
+
 		this.stateGraph = stateGraph;
 		inputManager.setInputAdapter(inputAdapter);
 	}
@@ -44,15 +54,11 @@ public class StateMachine<MachineInput,TransitionInput> {
 		if(hasStarted()) {
 			throw new IllegalStateException("Machine has already started.");
 		}
-		if(stateGraph == null) {
-			throw new IllegalStateException("No state graph specified.");
-		}
-		if(stateGraph.getStartState()==null) {
-			throw new IllegalStateException("No start state specified.");
+		if(stateGraph.getStartState() == null) {
+			throw new IllegalStateException("A start state is required prior to starting.");
 		}
 
 		stateGraph.onStart();
-
 		enterState(null, stateGraph.getStartState());
 	}
 
@@ -66,10 +72,31 @@ public class StateMachine<MachineInput,TransitionInput> {
 	 * transition input(s). For each transition input, the machine follows the first
 	 * {@link Transition} that considers itself valid.
 	 *
-	 * @param machineInput Machine input from which Transition inputs are generated to evaluate.
+	 * @param machineInput Machine input from which transition inputs are generated to evaluate.
+	 * @return Whether the input was successfully queued. To be notified of a failure via an
+	 * {@link InterruptedException}, see {@link #evaluateInputOrThrow(Object)}.
 	 * @throws IllegalStateException Thrown if no {@link InputAdapter} has been set.
 	 */
-	public void evaluateInput(MachineInput machineInput) throws InterruptedException {
+	public boolean evaluateInput(MachineInput machineInput) {
+		try {
+			evaluateInputOrThrow(machineInput);
+			return true;
+		} catch (InterruptedException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Provides the input to the machine's {@link InputAdapter} and evaluates the resulting
+	 * transition input(s). For each transition input, the machine follows the first
+	 * {@link Transition} that considers itself valid.
+	 *
+	 * @param machineInput Machine input from which transition inputs are generated to evaluate.
+	 * @throws IllegalStateException Thrown if no {@link InputAdapter} has been set.
+	 * @throws InterruptedException Thrown if the thread was interrupted while waiting to enqueue
+	 * the input.
+	 */
+	public void evaluateInputOrThrow(MachineInput machineInput) throws InterruptedException {
 		if(!inputManager.hasInputAdapter()) {
 			throw new IllegalStateException("No input adapter set prior to calling evaluateInput()");
 		}
@@ -138,7 +165,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 		return stateGraph.findFirstValidTransitionFromState(currentState, input);
 	}
 
-	/** Follows the given transition without checking its validity.  In the process, it calls
+	/** Follows the given transition without checking its validity. In the process, it calls
 	 * {@link State#onExit()} on the current state, followed by
 	 * {@link Transition#onTransition(Object)} on the given transition, followed by
 	 * {@link State#onEnter()} on the machine's updated current state.
@@ -167,15 +194,13 @@ public class StateMachine<MachineInput,TransitionInput> {
 	}
 
 	/**
-	 * Exits the machine's current state and enters the given state.  Explicitly setting the
-	 * machine's state should generally be avoided in favor of evaluating inputs.  However, this
+	 * Exits the machine's current state and enters the given state. Explicitly setting the
+	 * machine's state should generally be avoided in favor of evaluating inputs. However, this
 	 * method is useful if, for example, your state machine corresponds to some external
 	 * system/process that has changed and your application needs to get back in sync with it.
 	 */
 	public void transition(State<TransitionInput> newState, State<TransitionInput>... submachineStates) {
-		if(newState == null) {
-			throw new IllegalArgumentException("New state cannot be null.");
-		}
+		assertNotNull("New state is required to transition.", newState);
 
 		State<TransitionInput> previousState = exitCurrentState(newState, submachineStates);
 		enterState(previousState, newState, submachineStates);
@@ -215,7 +240,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 	}
 
 	private void initializeSubmachine(SubmachineState<TransitionInput> submachineState, State<TransitionInput>[] submachineStates) {
-		submachine = new StateMachine<>(submachineState.getStateGraph(), new DefaultInputAdapter<TransitionInput>());
+		submachine = newStateMachine(submachineState.getStateGraph());
 		submachine.eventListeners = eventListeners;
 
 		if(submachineStates.length > 0) {
@@ -260,7 +285,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 	}
 
 	/**
-	 * @return All of the CompositeStates that enclose the given State.  The values are returned in
+	 * @return All of the CompositeStates that enclose the given State. The values are returned in
 	 * the order returned by {@link State#getComposites()}, with nested composites ordered from the
 	 * State's outer-most composite to its immediate parent composite.
 	 */
@@ -340,31 +365,20 @@ public class StateMachine<MachineInput,TransitionInput> {
 	}
 
 	private State<TransitionInput> getFirstState(State<TransitionInput>[] states) {
-		return states.length==0?
+		return states.length == 0?
 				null :
 				states[0];
 	}
 
 	private State<TransitionInput>[] getRemainingStates(State<TransitionInput>[] states) {
-		return states.length==0?
+		return states.length == 0?
 				states :
 				Arrays.copyOfRange(states, 1, states.length);
 	}
 
-	public StateGraph<TransitionInput> getStateGraph() {
-		return stateGraph;
-	}
-	public void setStateGraph(StateGraph<TransitionInput> stateGraph) {
-		this.stateGraph = stateGraph;
-	}
-
-	public void setInputAdapter(InputAdapter<MachineInput,TransitionInput> inputAdapter) {
-		inputManager.setInputAdapter(inputAdapter);
-	}
-
 	/**
 	 * Returns the state of the machine, including the state of any submachines that may be
-	 * running.  The first State returned is that of machine on which getState() is being called,
+	 * running. The first State returned is that of machine on which getState() is being called,
 	 * followed by the state of nested machines.
 	 * 
 	 * @see #getState() */
@@ -394,7 +408,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 
 	/**
 	 * Simply sets the machine's state, without calling callbacks like {@link State#onEnter()} or
-	 * {@link State#onExit()}.  It also does not setup the nested state machine if given state is a
+	 * {@link State#onExit()}. It also does not setup the nested state machine if given state is a
 	 * SubmachineState. This method was added for testing purposes and should be avoided by API
 	 * users, who will likely find {@link #transition(State, State...)} more useful.
 	 */

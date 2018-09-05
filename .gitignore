@@ -1,6 +1,7 @@
 /.project
 /.classpath
-/TODO.txt
 /target
 /.settings
 /*.iml
+/.idea
+/TODO.txt

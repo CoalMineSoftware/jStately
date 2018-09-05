@@ -1,64 +1,85 @@
 package com.coalminesoftware.jstately.graph;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.coalminesoftware.jstately.collection.Multimap;
 import com.coalminesoftware.jstately.graph.composite.CompositeState;
 import com.coalminesoftware.jstately.graph.state.FinalState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
+import com.coalminesoftware.jstately.machine.StateMachine;
 
-/** Representation of a state graph/diagram. */
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import static com.coalminesoftware.jstately.ParameterValidation.assertNotNull;
+
+/** Representation of a state graph. */
 public class StateGraph<TransitionInput> {
 	/** Key under which global transitions are stored in {@link #transitionsByTail}. */
-	private final State<TransitionInput> GLOBAL_TRANSITION_KEY = null;
+	private static final State GLOBAL_TRANSITION_KEY = null;
 
 	private State<TransitionInput> startState;
-	private Multimap<State<TransitionInput>,Transition<TransitionInput>> transitionsByTail = new Multimap<>();
+	private Multimap<State<TransitionInput>, Transition<TransitionInput>> transitionsByTail = new Multimap<>();
+
+	public StateGraph() { }
+
+	public StateGraph(State<TransitionInput> startState) {
+		setStartState(startState);
+	}
 
 	public State<TransitionInput> getStartState() {
 		return startState;
 	}
 
-	public void setStartState(State<TransitionInput> startState) {
+	public StateGraph<TransitionInput> setStartState(State<TransitionInput> startState) {
 		if(startState instanceof FinalState) {
-			throw new IllegalArgumentException("A graph's start state cannot be a final state.");
+			throw new IllegalArgumentException("Start state cannot be an instance of FinalState");
 		}
+
 		this.startState = startState;
+
+		return this;
+	}
+
+	public StateGraph<TransitionInput> addTransition(State<TransitionInput> transitionTail, Transition<TransitionInput> transition) {
+		assertNotNull("Tail state is required.", transitionTail);
+		assertTransitionValidity(transition);
+		transitionsByTail.put(transitionTail,transition);
+
+		return this;
+	}
+
+	public StateGraph<TransitionInput> addSelfTransition(Transition<TransitionInput> transition) {
+		assertTransitionValidity(transition);
+		transitionsByTail.put(transition.getHead(),transition);
+
+		return this;
 	}
 
 	public Set<Transition<TransitionInput>> getTransitions() {
 		return new HashSet<>(transitionsByTail.values());
 	}
 
-	public void addTransition(State<TransitionInput> transitionTail, Transition<TransitionInput> transition) {
-		if(transitionTail==null) {
-			throw new IllegalArgumentException("Tail cannot be be null.");
-		}
-		transitionsByTail.put(transitionTail,transition);
-	}
-
-	public void addSelfTransition(Transition<TransitionInput> transition) {
-		if(transition.getHead()==null) {
-			throw new IllegalArgumentException("A Transition's head/tail cannot be be null.");
-		}
-		transitionsByTail.put(transition.getHead(),transition);
-	}
-
 	/**
 	 * Adds a transitions that will be evaluated if no valid transition is found for the given
-	 * input from the current state or enclosing CompositeState.
+	 * input from the current state or enclosing {@link CompositeState}.
 	 */
-	public void addGlobalTransition(Transition<TransitionInput> transition) {
-		transitionsByTail.put(GLOBAL_TRANSITION_KEY, transition);
+	@SuppressWarnings("unchecked")
+	public StateGraph<TransitionInput> addGlobalTransition(Transition<TransitionInput> transition) {
+		assertTransitionValidity(transition);
+		transitionsByTail.put((State<TransitionInput>) GLOBAL_TRANSITION_KEY, transition);
+
+		return this;
 	}
 
 	/** @return All of the graph's transitions that apply from any state. */
+	@SuppressWarnings("unchecked")
 	public Set<Transition<TransitionInput>> getGlobalTransitions() {
-		return transitionsByTail.get(GLOBAL_TRANSITION_KEY);
+		return Collections.unmodifiableSet(
+				transitionsByTail.get((State<TransitionInput>) GLOBAL_TRANSITION_KEY));
 	}
 
+	@SuppressWarnings("unchecked")
 	public Transition<TransitionInput> findFirstValidTransitionFromState(State<TransitionInput> tailState, TransitionInput input) {
 		for(Transition<TransitionInput> transition : transitionsByTail.get(tailState)) {
 			if(transition.isValid(input)) {
@@ -77,7 +98,7 @@ public class StateGraph<TransitionInput> {
 			}
 		}
 
-		for(Transition<TransitionInput> transition : transitionsByTail.get(null)) {
+		for(Transition<TransitionInput> transition : transitionsByTail.get((State<TransitionInput>) GLOBAL_TRANSITION_KEY)) {
 			if(transition.isValid(input)) {
 				return transition;
 			}
@@ -86,6 +107,11 @@ public class StateGraph<TransitionInput> {
 		return null;
 	}
 
-	/** Called when the machine operating on the graph starts. */
+	private void assertTransitionValidity(Transition<TransitionInput> transition) {
+		assertNotNull("Transition is required.", transition);
+		assertNotNull("A transition head is required.", transition.getHead());
+	}
+
+	/** Called when a machine traversing the graph starts. See {@link StateMachine#start()}. */
 	public void onStart() {}
 }

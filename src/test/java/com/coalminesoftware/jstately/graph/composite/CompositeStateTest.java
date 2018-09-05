@@ -1,17 +1,17 @@
 package com.coalminesoftware.jstately.graph.composite;
 
-import com.coalminesoftware.jstately.collection.CollectionUtil;
 import com.coalminesoftware.jstately.graph.state.DefaultState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
-import com.coalminesoftware.jstately.test.DefaultTransition;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static com.coalminesoftware.jstately.collection.CollectionUtil.asMutableSet;
+import static com.coalminesoftware.jstately.test.MockingUtils.mockObjectTransition;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 public class CompositeStateTest {
 	@Test
@@ -21,9 +21,9 @@ public class CompositeStateTest {
 
 		parentComposite.addComposite(childComposite);
 
-		assertEquals("When a child is added to a parent, that relationship is represented by the child maintaining a reference to its parent.",
+		assertThat("When a child is added to a parent, that relationship should be represented by the child maintaining a reference to its parent.",
 				childComposite.getParent(),
-				parentComposite);
+				is(parentComposite));
 	}
 
 	@Test
@@ -34,15 +34,15 @@ public class CompositeStateTest {
 
 		firstCompositeState.addState(state);
 
-		assertEquals("The state should have a reference to only the composite that the state was added to",
-				Arrays.asList(firstCompositeState),
-				state.getComposites());
+		assertThat("The state should have a reference to only the composite that the state was added to",
+				state.getComposites(),
+				is(asList(firstCompositeState)));
 
 		secondCompositeState.addState(state);
 
-		assertEquals("The state should have a reference to both of the composites that the state was added to",
-				Arrays.asList(firstCompositeState, secondCompositeState),
-				state.getComposites());
+		assertThat("The state should have a reference to both of the composites that the state was added to",
+				state.getComposites(),
+				is(asList(firstCompositeState, secondCompositeState)));
 	}
 
 	@Test
@@ -54,55 +54,56 @@ public class CompositeStateTest {
 
 		compositeState.addStates(firstState, secondState);
 
-		assertEquals("After calling addStates(), all of the given states should have a reference to the composite.",
-				Arrays.asList(compositeState),
-				firstState.getComposites());
-		assertEquals("After calling addStates(), all of the given states should have a reference to the composite.",
-				Arrays.asList(compositeState),
-				secondState.getComposites());
+		assertThat("After calling addStates(), all of the given states should have a reference to the composite.",
+				firstState.getComposites(),
+				is(asList(compositeState)));
+		assertThat("After calling addStates(), all of the given states should have a reference to the composite.",
+				secondState.getComposites(),
+				is(asList(compositeState)));
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testAddTransition() {
 		CompositeState<Object> composite = new CompositeState<>();
-		Transition<Object> firstTransition = new DefaultTransition<>();
+		Transition<Object> firstTransition = mockObjectTransition(true);
 
 		composite.addTransition(firstTransition);
 
-		assertEquals("A composite should maintain a reference to any transition added to it.",
-				Collections.singleton(firstTransition),
-				composite.getTransitions());
+		assertThat("A composite should maintain a reference to any transition added to it.",
+				composite.getTransitions(),
+				is(singleton(firstTransition)));
 
-		Transition<Object> secondTransition = new DefaultTransition<>();
+		Transition<Object> secondTransition = mockObjectTransition(true);
 		composite.addTransition(secondTransition);
 
-		assertEquals("A composite should maintain a reference to any transition added to it.",
-				CollectionUtil.asMutableSet(firstTransition, secondTransition),
-				composite.getTransitions());
+		assertThat("A composite should maintain a reference to any transition added to it.",
+				composite.getTransitions(),
+				is(asMutableSet(firstTransition, secondTransition)));
 	}
 
 	@Test
 	public void testFindFirstValidTransitionWithoutValidTransition() {
 		CompositeState<Object> compositeState = new CompositeState<>();
 
-		Transition<Object> invalidTransition = new DefaultTransition<>(false);
+		Transition<Object> invalidTransition = mockObjectTransition(false);
 		compositeState.addTransition(invalidTransition);
 
-		assertNull("No valid transitions should have been found",
-				compositeState.findFirstValidTransition(null));
+		assertThat("No valid transitions should have been found",
+				compositeState.findFirstValidTransition(null),
+				nullValue());
 	}
 
 	@Test
 	public void testFindFirstValidTransitionWithValidTransition() {
 		CompositeState<Object> compositeState = new CompositeState<>();
 
-		Transition<Object> validTransition = new DefaultTransition<>(true);
+		Transition<Object> validTransition = mockObjectTransition(true);
 		compositeState.addTransition(validTransition);
 
-		assertEquals("The valid transition should have been returned",
-				validTransition,
-				compositeState.findFirstValidTransition(null));
+		assertThat("The valid transition should have been returned",
+				compositeState.findFirstValidTransition(null),
+				is(validTransition));
 	}
 
 	@Test
@@ -110,20 +111,20 @@ public class CompositeStateTest {
 	public void testFindValidTransitions() {
 		CompositeState<Object> compositeState = new CompositeState<>();
 
-		Transition<Object> firstValidTransition = new DefaultTransition<>(true);
+		Transition<Object> firstValidTransition = mockObjectTransition(true);
 		compositeState.addTransition(firstValidTransition);
 
-		Transition<Object> secondValidTransition = new DefaultTransition<>(true);
+		Transition<Object> secondValidTransition = mockObjectTransition(true);
 		compositeState.addTransition(secondValidTransition);
  
-		Transition<Object> firstInvalidTransition = new DefaultTransition<>(false);
+		Transition<Object> firstInvalidTransition = mockObjectTransition(false);
 		compositeState.addTransition(firstInvalidTransition);
 
-		Transition<Object> secondInvalidTransition = new DefaultTransition<>(false);
+		Transition<Object> secondInvalidTransition = mockObjectTransition(false);
 		compositeState.addTransition(secondInvalidTransition);
 
-		assertEquals("The valid transition should have been returned",
-				CollectionUtil.asMutableSet(firstValidTransition, secondValidTransition),
-				compositeState.findValidTransitions(null));
+		assertThat("The valid transition should have been returned",
+				compositeState.findValidTransitions(null),
+				is(asMutableSet(firstValidTransition, secondValidTransition)));
 	}
 }

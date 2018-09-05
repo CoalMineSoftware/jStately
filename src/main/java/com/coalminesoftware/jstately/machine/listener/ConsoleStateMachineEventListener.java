@@ -5,7 +5,6 @@ import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.machine.StateMachine;
 
-
 /** Event listener that logs events to System.out. */
 public class ConsoleStateMachineEventListener<TransitionInput> implements StateMachineEventListener<TransitionInput> {
 	@Override

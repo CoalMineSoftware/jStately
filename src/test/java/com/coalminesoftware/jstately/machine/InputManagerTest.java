@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class InputManagerTest {
@@ -25,22 +24,24 @@ public class InputManagerTest {
 		manager.queueInput(Arrays.asList(4));
 
 		assertThat(manager.hasNext(), is(true));
-		assertThat(1, is(manager.next()));
+		assertThat(manager.next(), is(1));
 		assertThat(manager.hasNext(), is(true));
-		assertThat(2, is(manager.next()));
+		assertThat(manager.next(), is(2));
 		assertThat(manager.hasNext(), is(true));
-		assertThat(3, is(manager.next()));
+		assertThat(manager.next(), is(3));
 		assertThat(manager.hasNext(), is(true));
-		assertThat(4, is(manager.next()));
+		assertThat(manager.next(), is(4));
 
 		assertThat(manager.hasNext(), is(false));
 
 		manager.queueInput(Arrays.asList(5, 6));
 
 		assertThat(manager.hasNext(), is(true));
-		assertThat(5, is(manager.next()));
+		assertThat(manager.next(), is(5));
 		assertThat(manager.hasNext(), is(true));
-		assertThat(6, is(manager.next()));
+		assertThat(manager.next(), is(6));
+
+		assertThat(manager.hasNext(), is(false));
 	}
 
 	private class TestInputAdapter implements InputAdapter<List<Integer>,Integer> {

@@ -3,7 +3,6 @@ package com.coalminesoftware.jstately.machine;
 import java.util.LinkedList;
 import java.util.Queue;
 
-
 /**
  * A simple InputAdapter implementation for machines that take the same input type as their
  * transitions.

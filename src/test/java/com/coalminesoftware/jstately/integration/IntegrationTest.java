@@ -1,21 +1,20 @@
 package com.coalminesoftware.jstately.integration;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.coalminesoftware.jstately.graph.StateGraph;
 import com.coalminesoftware.jstately.graph.composite.CompositeState;
 import com.coalminesoftware.jstately.graph.state.DefaultState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.EqualityTransition;
 import com.coalminesoftware.jstately.graph.transition.Transition;
-import com.coalminesoftware.jstately.machine.DefaultInputAdapter;
 import com.coalminesoftware.jstately.machine.StateMachine;
 import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
 import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 public class IntegrationTest {
 	private static State<Integer> stateA;
@@ -40,22 +39,21 @@ public class IntegrationTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() {
-		graph = new StateGraph<>();
-
 		stateA = new DefaultState<>("State A");
-		graph.setStartState(stateA);
 
 		stateB = new DefaultState<>("State B");
 		transitionAB = new EqualityTransition<>(stateB, 1);
-		graph.addTransition(stateA, transitionAB);
 
 		stateC = new DefaultState<>("State C");
 		transitionBC = new EqualityTransition<>(stateC, 2);
-		graph.addTransition(stateB, transitionBC);
 
 		stateD = new DefaultState<>("State D");
 		transitionCD = new EqualityTransition<>(stateD, 3);
-		graph.addTransition(stateC, transitionCD);
+
+		graph = new StateGraph<>(stateA)
+				.addTransition(stateA, transitionAB)
+				.addTransition(stateB, transitionBC)
+				.addTransition(stateC, transitionCD);
 
 		// First set of (nested) composites
 		compositeX1 = new CompositeState<>("First inner composite");
@@ -79,10 +77,11 @@ public class IntegrationTest {
 	}
 
 	@Test
-	public void testStateMachineStateTransitioning() throws InterruptedException {
-		StateMachine<Integer,Integer> machine = new StateMachine<>(graph, new DefaultInputAdapter<Integer>());
+	public void testStateMachineStateTransitioning() {
+		StateMachine<Integer,Integer> machine = StateMachine.newStateMachine(graph);
 
-		TestStateMachineEventListener<Integer> listener = new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
+		TestStateMachineEventListener<Integer> listener =
+				new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
 		machine.addEventListener(listener);
 
 		machine.start();
@@ -121,8 +120,8 @@ public class IntegrationTest {
 	}
 
 	@Test
-	public void testStateMachineStateTransitionPrecedence() throws InterruptedException {
-		StateMachine<Integer,Integer> machine = new StateMachine<>(graph, new DefaultInputAdapter<Integer>());
+	public void testStateMachineStateTransitionPrecedence() {
+		StateMachine<Integer,Integer> machine = StateMachine.newStateMachine(graph);
 		machine.transition(stateB);
 
 		TestStateMachineEventListener<Integer> listener = new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
@@ -138,36 +137,28 @@ public class IntegrationTest {
 	}
 
 	@Test
-	public void testRecursiveEvaluation() throws InterruptedException {
+	public void testRecursiveEvaluation() {
 		// Defines a graph with a transition that evaluates another input. This tests that the
 		// machine is able to queue the subsequent input rather than trying evaluate it
 		// immediately.
 
-		StateGraph<Integer> graph = new StateGraph<>();
-		final StateMachine<Integer, Integer> machine = new StateMachine<>(
-				graph, new DefaultInputAdapter<Integer>());
-
 		State<Integer> stateA = new DefaultState<>("A");
-		graph.setStartState(stateA);
-
 		State<Integer> stateB = new DefaultState<>("B");
+		State<Integer> stateC = new DefaultState<>("C");
+
+		StateGraph<Integer> graph = new StateGraph<>(stateA);
+		final StateMachine<Integer, Integer> machine = StateMachine.newStateMachine(graph);
 		graph.addTransition(stateA, new EqualityTransition<Integer>(stateB, 1) {
 			@Override
 			public void onTransition(Integer integer) {
-				try {
-					machine.evaluateInput(2);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
+				machine.evaluateInput(2);
 			}
 		});
-
-		State<Integer> stateC = new DefaultState<>("C");
 		graph.addTransition(stateB, new EqualityTransition<>(stateC, 2));
 
 		machine.start();
 		machine.evaluateInput(1);
 
-		assertEquals(stateC, machine.getState());
+		assertThat(machine.getState(), is(stateC));
 	}
 }

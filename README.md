@@ -1,12 +1,11 @@
 jStately
 ========
 
-By Brandon Rich
+by Brandon Rich
 
-jStately is a state machine written in Java. There are a few graphic tools out
-there that can churn out generated state machine code in a variety of languages
-including Java. But the goal of jStately is to allow developers to "hand craft"
-maintainable, readable state graphs in an object-oriented way.
+jStately is a state machine library written in Java. Its goal is to allow
+developers to "hand craft" maintainable, readable state graphs in an
+object-oriented way.
 
 It was written with OOD principles and extensibility in mind. Users build
 `StateGraph`s made up primarily of `State`s and `Transition`s, implementing
@@ -15,15 +14,15 @@ transition. jStately relies heavily on interfaces but also provides sensible
 default implementations. For example, a user could implement a `Transition`
 that determines whether it is valid for a given input based on arbitrary
 business logic. But the provided `EqualityTransition` implementation will
-appeal to users whose transitions are based simply on whether an input is equal
-to a particular expected value.
+appeal to users whose transitions are based simply on whether a certain input
+value was encountered.
 
-Although jStately does not aim to implement a particular defintion of a state
-machine, features from common definitions are present. For example, a
-`CompositeState` defines a collection of states and/or nested
-`CompositeState`s, similar to hierarchical nested states in UML.
-Composite states can have their own entry and exit behavior, as well as
-transitions that are evaluated while the machine is in any contained state.
+Although jStately does not aim to implement a particular formalized
+representation of a state machine, features from common definitions are
+present. For example, a `CompositeState` defines a collection of states similar
+to hierarchical nested states in UML. Composite states can have their own entry
+and exit behavior, as well as transitions that are evaluated while the machine
+is in any contained state.
 
 Example 
 -------
@@ -48,27 +47,31 @@ public class GhostStateGraph extends StateGraph<GameEvent> {
 
         setStartState(wanderingState);
 
-        addTransition(wanderingState, new EqualityTransition<>(chasingState, GameEvent.PACMAN_SPOTTED));
-        addTransition(chasingState, new EqualityTransition<>(wanderingState, GameEvent.PACMAN_LOST));
-        addTransition(fleeingState, new EqualityTransition<>(wanderingState, GameEvent.POWER_PELLET_WORE_OFF));
-        addTransition(fleeingState, new EqualityTransition<GameEvent>(returningHomeState, GameEvent.GHOST_EATEN));
-        addTransition(returningHomeState, new EqualityTransition<>(wanderingState, GameEvent.GHOST_REACHED_HOME));
+        addTransition(wanderingState,
+                new EqualityTransition<>(chasingState, GameEvent.PACMAN_SPOTTED));
+        addTransition(chasingState,
+                new EqualityTransition<>(wanderingState, GameEvent.PACMAN_LOST));
+        addTransition(fleeingState,
+                new EqualityTransition<>(wanderingState, GameEvent.POWER_PELLET_WORE_OFF));
+        addTransition(fleeingState,
+                new EqualityTransition<GameEvent>(returningHomeState, GameEvent.GHOST_EATEN));
+        addTransition(returningHomeState,
+                new EqualityTransition<>(wanderingState, GameEvent.GHOST_REACHED_HOME));
 
-        new CompositeState<>(null, wanderingState, chasingState)
+        new CompositeState<>(wanderingState, chasingState)
                 .addTransition(new EqualityTransition<>(fleeingState, GameEvent.POWER_PELLET_EATEN));
     }
-} 
+}
 ```
 
-A `StateGraph` defines the relationship between its states but it is a
-`StateMachine` that _has_ state and evaluates inputs in order to traverse the
-graph. To use the graph defined above, a `StateMachine` could be initialized
-with this code:
+A `StateGraph` defines the relationship between its states but the graph itself
+is stateless. It is a `StateMachine` that _has_ state and evaluates inputs in
+order to traverse the graph. To use the graph defined above, a `StateMachine`
+could be initialized with this code:
 
 ```java
-StateMachine<GameEvent, GameEvent> machine = new StateMachine<>(
-        new GhostStateGraph(),
-        new DefaultInputAdapter<GameEvent>());
+StateMachine<GameEvent, GameEvent> machine =
+        StateMachine.newStateMachine(new GhostStateGraph());
 machine.start();
 ```
 

@@ -2,7 +2,6 @@ package com.coalminesoftware.jstately.graph.state;
 
 import com.coalminesoftware.jstately.graph.StateGraph;
 
-
 /**
  * Basic {@link SubmachineState} implementation that provides the given StateGraph when a state machine
  * enters the state and sets up the state machine that will evaluate the SubmachineState's graph.

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Minimal implementation of a map that accommodates multiple values for a single key.
+ * Minimal implementation of a map that allows multiple values for a single key.
  *
  * @param <K> Key type
  * @param <V> Value type
@@ -38,9 +38,7 @@ public class Multimap<K,V> {
 		List<V> values = new ArrayList<>();
 
 		for(Set<V> valueSet : mValuesByKey.values()) {
-			for(V value : valueSet) {
-				values.add(value);
-			}
+			values.addAll(valueSet);
 		}
 
 		return values;
