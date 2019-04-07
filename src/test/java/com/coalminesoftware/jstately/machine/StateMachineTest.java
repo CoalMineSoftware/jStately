@@ -6,6 +6,7 @@ import com.coalminesoftware.jstately.graph.state.DefaultSubmachineState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.state.SubmachineState;
 import com.coalminesoftware.jstately.graph.transition.EqualityTransition;
+import com.coalminesoftware.jstately.machine.input.InputAdapter;
 import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
 import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
@@ -33,7 +34,7 @@ public class StateMachineTest {
 		StateGraph<Object> graph = mock(StateGraph.class);
 		doReturn(null).when(graph).getStartState();
 
-		StateMachine<Object, Object> machine = StateMachine.newStateMachine(graph);
+		StateMachine<Object, Object> machine = StateMachine.create(graph);
 		machine.start();
 	}
 
@@ -51,7 +52,7 @@ public class StateMachineTest {
 		State<Object> outerState = new DefaultSubmachineState<>(null, intermediateGraph);
 		StateGraph<Object> outerGraph = new StateGraph<>(outerState);
 
-		StateMachine<Object,Object> machine = StateMachine.newStateMachine(outerGraph);
+		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
 		machine.start();
 
 		assertThat("Machine could't be initialized as expected.",
@@ -83,7 +84,7 @@ public class StateMachineTest {
 		StateGraph<Object> intermediateGraph = createStateGraphWithSubmachineState(innerGraph);
 		StateGraph<Object> outerGraph = createStateGraphWithSubmachineState(intermediateGraph);
 
-		StateMachine<Object,Object> machine = StateMachine.newStateMachine(outerGraph);
+		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
 		TestStateMachineEventListener<Object> listener = new TestStateMachineEventListener<>();
 		machine.addEventListener(listener);
 
@@ -131,7 +132,7 @@ public class StateMachineTest {
 		StateGraph outerGraph = new StateGraph<>(outerSecondState)
 				.addTransition(outerFirstState, mockObjectTransition(true, outerSecondState));
 
-		StateMachine<Object,Object> machine = StateMachine.newStateMachine(outerGraph);
+		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
 		TestStateMachineEventListener<Object> listener = new TestStateMachineEventListener<>();
 		machine.addEventListener(listener);
 
@@ -154,7 +155,7 @@ public class StateMachineTest {
 		StateGraph<Object> intermediateGraph = createStateGraphWithSubmachineState(innerGraph);
 		StateGraph<Object> outerGraph = createStateGraphWithSubmachineState(intermediateGraph);
 
-		StateMachine<Object,Object> machine = StateMachine.newStateMachine(outerGraph);
+		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
 
 		machine.start();
 		assertThat("State machine could not be initialized for test.",
@@ -179,7 +180,7 @@ public class StateMachineTest {
 
 		StateGraph<Integer> graph = new StateGraph<>(stateS)
 				.addTransition(stateS, new EqualityTransition<>(stateA, null));
-		StateMachine<Integer, Integer> machine = StateMachine.newStateMachine(graph);
+		StateMachine<Integer, Integer> machine = StateMachine.create(graph);
 		machine.start();
 
 		assertThat("Machine expected to start in its graph's start state",

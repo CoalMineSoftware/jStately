@@ -111,7 +111,7 @@ public class SubmachineTransitionTest {
 			outerStateGraph = new StateGraph<>(outerStateGraphStartState)
 					.addTransition(outerStateGraphStartState, mockObjectTransition(true, outerStateGraphSecondState));
 
-			machine = StateMachine.newStateMachine(outerStateGraph);
+			machine = StateMachine.create(outerStateGraph);
 
 			machine.start();
 			assertThat("Couldn't initialize test.",

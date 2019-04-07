@@ -78,7 +78,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testStateMachineStateTransitioning() {
-		StateMachine<Integer,Integer> machine = StateMachine.newStateMachine(graph);
+		StateMachine<Integer,Integer> machine = StateMachine.create(graph);
 
 		TestStateMachineEventListener<Integer> listener =
 				new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
@@ -121,7 +121,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testStateMachineStateTransitionPrecedence() {
-		StateMachine<Integer,Integer> machine = StateMachine.newStateMachine(graph);
+		StateMachine<Integer,Integer> machine = StateMachine.create(graph);
 		machine.transition(stateB);
 
 		TestStateMachineEventListener<Integer> listener = new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
@@ -147,7 +147,7 @@ public class IntegrationTest {
 		State<Integer> stateC = new DefaultState<>("C");
 
 		StateGraph<Integer> graph = new StateGraph<>(stateA);
-		final StateMachine<Integer, Integer> machine = StateMachine.newStateMachine(graph);
+		final StateMachine<Integer, Integer> machine = StateMachine.create(graph);
 		graph.addTransition(stateA, new EqualityTransition<Integer>(stateB, 1) {
 			@Override
 			public void onTransition(Integer integer) {

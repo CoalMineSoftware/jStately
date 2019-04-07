@@ -1,4 +1,4 @@
-package com.coalminesoftware.jstately.machine;
+package com.coalminesoftware.jstately.machine.input;
 
 import org.junit.Test;
 
@@ -45,21 +45,9 @@ public class InputManagerTest {
 	}
 
 	private class TestInputAdapter implements InputAdapter<List<Integer>,Integer> {
-		Iterator<Integer> iterator;
-
 		@Override
-		public void setInput(List<Integer> input) {
-			iterator = input.iterator();
-		}
-
-		@Override
-		public boolean hasNext() {
-			return iterator != null && iterator.hasNext();
-		}
-
-		@Override
-		public Integer next() {
-			return iterator.next();
+		public Iterator<Integer> adaptInput(List<Integer> integers) {
+			return integers.iterator();
 		}
 	}
 }

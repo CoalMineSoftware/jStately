@@ -3,6 +3,8 @@ package com.coalminesoftware.jstately.machine;
 import com.coalminesoftware.jstately.graph.StateGraph;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
+import com.coalminesoftware.jstately.machine.input.PassthroughInputAdapter;
+import com.coalminesoftware.jstately.machine.input.InputAdapter;
 import com.coalminesoftware.jstately.machine.listener.StateMachineEventListener;
 
 import java.util.List;
@@ -18,10 +20,10 @@ public class SynchronizedStateMachine<MachineInput,TransitionInput>
 
 	/**
 	 * Instantiate a machine with the same input type as its graph’s transitions, and a
-	 * {@link DefaultInputAdapter} instance as its adapter.
+	 * {@link PassthroughInputAdapter} as its adapter.
 	 */
 	public static <T> SynchronizedStateMachine<T, T> newStateMachine(StateGraph<T> stateGraph) {
-		return new SynchronizedStateMachine<>(stateGraph, new DefaultInputAdapter<T>());
+		return new SynchronizedStateMachine<>(stateGraph, new PassthroughInputAdapter<T>());
 	}
 
 	public SynchronizedStateMachine(StateGraph<TransitionInput> stateGraph,

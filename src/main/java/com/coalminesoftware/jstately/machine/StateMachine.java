@@ -7,6 +7,9 @@ import com.coalminesoftware.jstately.graph.state.FinalState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.state.SubmachineState;
 import com.coalminesoftware.jstately.graph.transition.Transition;
+import com.coalminesoftware.jstately.machine.input.PassthroughInputAdapter;
+import com.coalminesoftware.jstately.machine.input.InputAdapter;
+import com.coalminesoftware.jstately.machine.input.InputManager;
 import com.coalminesoftware.jstately.machine.listener.StateMachineEventListener;
 
 import java.util.ArrayList;
@@ -30,10 +33,10 @@ public class StateMachine<MachineInput,TransitionInput> {
 
 	/**
 	 * Instantiate a machine with the same input type as its graph’s transitions, and a
-	 * {@link DefaultInputAdapter} instance as its adapter.
+	 * {@link PassthroughInputAdapter} as its adapter.
 	 */
-	public static <T> StateMachine<T, T> newStateMachine(StateGraph<T> stateGraph) {
-		return new StateMachine<>(stateGraph, new DefaultInputAdapter<T>());
+	public static <T> StateMachine<T, T> create(StateGraph<T> stateGraph) {
+		return new StateMachine<>(stateGraph, new PassthroughInputAdapter<T>());
 	}
 
 	public StateMachine(StateGraph<TransitionInput> stateGraph, InputAdapter<MachineInput,TransitionInput> inputAdapter) {
@@ -240,7 +243,7 @@ public class StateMachine<MachineInput,TransitionInput> {
 	}
 
 	private void initializeSubmachine(SubmachineState<TransitionInput> submachineState, State<TransitionInput>[] submachineStates) {
-		submachine = newStateMachine(submachineState.getStateGraph());
+		submachine = StateMachine.create(submachineState.getStateGraph());
 		submachine.eventListeners = eventListeners;
 
 		if(submachineStates.length > 0) {
