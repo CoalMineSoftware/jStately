@@ -1,13 +1,8 @@
 package com.coalminesoftware.jstately.collection;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.*;
 
 /**
  * Minimal implementation of a map that allows multiple values for a single key.
@@ -16,35 +11,31 @@ import java.util.Set;
  * @param <V> Value type
  */
 public class Multimap<K,V> {
-	Map<K, Set<V>> mValuesByKey = new HashMap<>();
+	private final Map<K, Set<V>> valuesByKey = new HashMap<>();
 
-	public boolean put(K key, V value) {
-		Set<V> values = mValuesByKey.get(key);
-		if(values == null) {
-			values = new LinkedHashSet<>();
-			mValuesByKey.put(key, values);
-		}
-
-		return values.add(value);
+	public boolean put(@Nullable K key, @Nullable V value) {
+		return valuesByKey.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(value);
 	}
 
-	public Set<V> get(K key) {
-		return mValuesByKey.containsKey(key) ?
-				makeUnmodifiableCopy(mValuesByKey.get(key)) :
-				Collections.<V>emptySet();
+	@Nonnull
+	public Set<V> get(@Nullable K key) {
+		return valuesByKey.containsKey(key) ?
+				unmodifiableCopy(valuesByKey.get(key)) :
+				Collections.emptySet();
 	}
 
-	public Collection<V> values() {
+	@Nonnull
+	public List<V> values() {
 		List<V> values = new ArrayList<>();
-
-		for(Set<V> valueSet : mValuesByKey.values()) {
+		for(Set<V> valueSet : valuesByKey.values()) {
 			values.addAll(valueSet);
 		}
 
 		return values;
 	}
 
-	private Set<V> makeUnmodifiableCopy(Set<V> set) {
+	@Nonnull
+	private Set<V> unmodifiableCopy(@Nonnull Set<V> set) {
 		return Collections.unmodifiableSet(new LinkedHashSet<>(set));
 	}
 }

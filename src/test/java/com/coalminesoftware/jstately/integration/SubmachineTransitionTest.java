@@ -1,19 +1,19 @@
 package com.coalminesoftware.jstately.integration;
 
 import com.coalminesoftware.jstately.graph.StateGraph;
-import com.coalminesoftware.jstately.graph.state.DefaultState;
-import com.coalminesoftware.jstately.graph.state.DefaultSubmachineState;
+import com.coalminesoftware.jstately.graph.StateGraphBuilder;
 import com.coalminesoftware.jstately.graph.state.State;
+import com.coalminesoftware.jstately.graph.state.StateBuilder;
+import com.coalminesoftware.jstately.graph.state.SubmachineStateBuilder;
 import com.coalminesoftware.jstately.machine.StateMachine;
+import com.coalminesoftware.jstately.machine.StateMachineBuilder;
 import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
 import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
 import org.junit.Test;
 
 import static com.coalminesoftware.jstately.test.MockingUtils.mockObjectTransition;
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 public class SubmachineTransitionTest {
 	@Test
@@ -96,27 +96,31 @@ public class SubmachineTransitionTest {
 		public TestStateMachineEventListener<Object> listener;
 
 		public TestContext() {
-			firstInnerStateGraphStartState = new DefaultState<>("First inner start");
-			firstInnerStateGraphSecondState = new DefaultState<>("First inner second");
-			firstInnerStateGraph = new StateGraph<>(firstInnerStateGraphStartState)
-					.addTransition(firstInnerStateGraphStartState, mockObjectTransition(true, firstInnerStateGraphSecondState));
+			firstInnerStateGraphStartState = new StateBuilder<>().setDescription("First inner start").build();
+			firstInnerStateGraphSecondState = new StateBuilder<>().setDescription("First inner second").build();
+			firstInnerStateGraph = new StateGraphBuilder<>(firstInnerStateGraphStartState)
+					.addTransition(firstInnerStateGraphStartState, mockObjectTransition(true, firstInnerStateGraphSecondState))
+					.build();
 
-			secondInnerStateGraphStartState = new DefaultState<>("Second inner start");
-			secondInnerStateGraphSecondState = new DefaultState<>("Second inner second");
-			secondInnerStateGraph = new StateGraph<>(secondInnerStateGraphStartState)
-					.addTransition(secondInnerStateGraphStartState, mockObjectTransition(true, secondInnerStateGraphSecondState));
+			secondInnerStateGraphStartState = new StateBuilder<>().setDescription("Second inner start").build();
+			secondInnerStateGraphSecondState = new StateBuilder<>().setDescription("Second inner second").build();
+			secondInnerStateGraph = new StateGraphBuilder<>(secondInnerStateGraphStartState)
+					.addTransition(secondInnerStateGraphStartState, mockObjectTransition(true, secondInnerStateGraphSecondState))
+					.build();
 
-			outerStateGraphStartState = new DefaultSubmachineState<>("Outer start", firstInnerStateGraph);
-			outerStateGraphSecondState = new DefaultSubmachineState<>("Outer second", secondInnerStateGraph);
-			outerStateGraph = new StateGraph<>(outerStateGraphStartState)
-					.addTransition(outerStateGraphStartState, mockObjectTransition(true, outerStateGraphSecondState));
+			outerStateGraphStartState = new SubmachineStateBuilder<>(firstInnerStateGraph).setDescription("Outer start").build();
+			outerStateGraphSecondState = new SubmachineStateBuilder<>(secondInnerStateGraph).setDescription("Outer second").build();
+			outerStateGraph = new StateGraphBuilder<>(outerStateGraphStartState)
+					.addTransition(outerStateGraphStartState, mockObjectTransition(true, outerStateGraphSecondState))
+					.build();
 
-			machine = StateMachine.create(outerStateGraph);
+			machine = StateMachineBuilder.forMatchingInputTypes(outerStateGraph).build();
 
 			machine.start();
-			assertThat("Couldn't initialize test.",
-					machine.getStates(),
-					is(asList(outerStateGraphStartState, firstInnerStateGraphStartState)));
+			assertWithMessage("Couldn't initialize test.")
+					.that(machine.getStates())
+					.containsExactly(outerStateGraphStartState, firstInnerStateGraphStartState)
+					.inOrder();
 
 			listener = new TestStateMachineEventListener<>(EventType.STATE_ENTERED, EventType.STATE_EXITED);
 			machine.addEventListener(listener);

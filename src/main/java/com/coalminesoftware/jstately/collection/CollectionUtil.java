@@ -1,27 +1,41 @@
 package com.coalminesoftware.jstately.collection;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.*;
+
+import static java.util.Objects.requireNonNull;
 
 public final class CollectionUtil {
 	private CollectionUtil() { }
 
+	/** Pre-Java 10 alternative to List.copyOf(items) */
+	@Nonnull
+	public static <T> List<T> unmodifiableCopy(@Nonnull Collection<T> items) {
+		return Collections.unmodifiableList(new ArrayList<>(items));
+	}
+
 	/** @return A mutable Set with the given values. */
-	public static <T> Set<T> asMutableSet(T... values) {
+	@SafeVarargs
+	@Nonnull
+	public static <T> Set<T> asMutableSet(@Nonnull T... values) {
+		requireNonNull(values);
 		Set<T> valueSet = new HashSet<>();
 		Collections.addAll(valueSet, values);
 
 		return valueSet;
 	}
 
-	/** @return A list containing the elements from the given list, in the opposite order. */
-	public static <T> List<T> reverse(List<T> list) {
+	/** @return A copy of the given list, in the opposite order. */
+	@Nonnull
+	public static <T> List<T> reversedCopy(@Nonnull List<T> list) {
 		List<T> reversedList = new ArrayList<>(list);
 		Collections.reverse(reversedList);
 
 		return reversedList;
+	}
+
+	public static <T> boolean isEmpty(@Nullable T[] array) {
+		return array == null || array.length == 0;
 	}
 }

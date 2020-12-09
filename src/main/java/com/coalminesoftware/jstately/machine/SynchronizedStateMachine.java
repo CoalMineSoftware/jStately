@@ -2,11 +2,11 @@ package com.coalminesoftware.jstately.machine;
 
 import com.coalminesoftware.jstately.graph.StateGraph;
 import com.coalminesoftware.jstately.graph.state.State;
-import com.coalminesoftware.jstately.graph.transition.Transition;
-import com.coalminesoftware.jstately.machine.input.PassthroughInputAdapter;
 import com.coalminesoftware.jstately.machine.input.InputAdapter;
 import com.coalminesoftware.jstately.machine.listener.StateMachineEventListener;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -14,28 +14,15 @@ import java.util.List;
  * instance is used as the mutex object by default but a different object can be provided during
  * instantiation if needed.
  */
-public class SynchronizedStateMachine<MachineInput,TransitionInput>
-		extends StateMachine<MachineInput,TransitionInput> {
+public class SynchronizedStateMachine<MachineInput,TransitionInput> extends StateMachine<MachineInput,TransitionInput> {
 	private final Object mutex;
 
-	/**
-	 * Instantiate a machine with the same input type as its graph’s transitions, and a
-	 * {@link PassthroughInputAdapter} as its adapter.
-	 */
-	public static <T> SynchronizedStateMachine<T, T> newStateMachine(StateGraph<T> stateGraph) {
-		return new SynchronizedStateMachine<>(stateGraph, new PassthroughInputAdapter<T>());
-	}
-
-	public SynchronizedStateMachine(StateGraph<TransitionInput> stateGraph,
-			InputAdapter<MachineInput, TransitionInput> inputAdapter) {
-		super(stateGraph, inputAdapter);
-		mutex = this;
-	}
-
-	public SynchronizedStateMachine(StateGraph<TransitionInput> stateGraph,
-			InputAdapter<MachineInput, TransitionInput> inputAdapter, Object mutex) {
-		super(stateGraph, inputAdapter);
-		this.mutex = mutex;
+	SynchronizedStateMachine(StateGraph<TransitionInput> graph,
+			InputAdapter<MachineInput, TransitionInput> inputAdapter,
+			List<StateMachineEventListener<TransitionInput>> listeners,
+			Object mutex) {
+		super(graph, inputAdapter, listeners);
+		this.mutex = mutex == null ? this : mutex;
 	}
 
 	@Override
@@ -53,34 +40,28 @@ public class SynchronizedStateMachine<MachineInput,TransitionInput>
 	}
 
 	@Override
-	public boolean evaluateInput(MachineInput machineInput) {
+	public boolean evaluateInput(@Nullable MachineInput machineInput) {
 		synchronized (mutex) {
 			return super.evaluateInput(machineInput);
 		}
 	}
 
 	@Override
-	public void evaluateInputOrThrow(MachineInput machineInput) throws InterruptedException {
+	public void evaluateInputOrThrow(@Nullable MachineInput machineInput) throws InterruptedException {
 		synchronized (mutex) {
 			super.evaluateInputOrThrow(machineInput);
 		}
 	}
 
 	@Override
-	public Transition<TransitionInput> findFirstValidTransitionFromCurrentState(TransitionInput transitionInput) {
-		synchronized (mutex) {
-			return super.findFirstValidTransitionFromCurrentState(transitionInput);
-		}
-	}
-
-	@Override
-	public void transition(State<TransitionInput> newState, State<TransitionInput>... submachineStates) {
+	public void transition(@Nullable State<TransitionInput> newState, @Nullable State<TransitionInput>... submachineStates) {
 		synchronized (mutex) {
 			super.transition(newState, submachineStates);
 		}
 	}
 
 	@Override
+	@Nullable
 	public List<State<TransitionInput>> getStates() {
 		synchronized (mutex) {
 			return super.getStates();
@@ -88,6 +69,7 @@ public class SynchronizedStateMachine<MachineInput,TransitionInput>
 	}
 
 	@Override
+	@Nullable
 	public State<TransitionInput> getState() {
 		synchronized (mutex) {
 			return super.getState();
@@ -95,14 +77,14 @@ public class SynchronizedStateMachine<MachineInput,TransitionInput>
 	}
 
 	@Override
-	public void addEventListener(StateMachineEventListener<TransitionInput> eventListener) {
+	public void addEventListener(@Nonnull StateMachineEventListener<TransitionInput> eventListener) {
 		synchronized (mutex) {
 			super.addEventListener(eventListener);
 		}
 	}
 
 	@Override
-	public void removeEventListener(StateMachineEventListener<TransitionInput> eventListener) {
+	public void removeEventListener(@Nonnull StateMachineEventListener<TransitionInput> eventListener) {
 		synchronized (mutex) {
 			super.removeEventListener(eventListener);
 		}

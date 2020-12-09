@@ -1,6 +1,6 @@
 package com.coalminesoftware.jstately.test;
 
-import com.coalminesoftware.jstately.graph.composite.CompositeState;
+import com.coalminesoftware.jstately.graph.state.CompositeState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.machine.StateMachine;

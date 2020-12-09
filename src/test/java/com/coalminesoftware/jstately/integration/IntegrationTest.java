@@ -1,20 +1,23 @@
 package com.coalminesoftware.jstately.integration;
 
+import com.coalminesoftware.jstately.collection.Holder;
 import com.coalminesoftware.jstately.graph.StateGraph;
-import com.coalminesoftware.jstately.graph.composite.CompositeState;
-import com.coalminesoftware.jstately.graph.state.DefaultState;
+import com.coalminesoftware.jstately.graph.StateGraphBuilder;
+import com.coalminesoftware.jstately.graph.state.CompositeState;
+import com.coalminesoftware.jstately.graph.state.CompositeStateBuilder;
 import com.coalminesoftware.jstately.graph.state.State;
-import com.coalminesoftware.jstately.graph.transition.EqualityTransition;
+import com.coalminesoftware.jstately.graph.state.StateBuilder;
 import com.coalminesoftware.jstately.graph.transition.Transition;
+import com.coalminesoftware.jstately.graph.transition.TransitionBuilder;
 import com.coalminesoftware.jstately.machine.StateMachine;
+import com.coalminesoftware.jstately.machine.StateMachineBuilder;
 import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
 import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static com.google.common.truth.Truth.assertThat;
 
 public class IntegrationTest {
 	private static State<Integer> stateA;
@@ -39,46 +42,52 @@ public class IntegrationTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() {
-		stateA = new DefaultState<>("State A");
+		stateA = new StateBuilder<Integer>().setDescription("State A").build();
 
-		stateB = new DefaultState<>("State B");
-		transitionAB = new EqualityTransition<>(stateB, 1);
+		stateB = new StateBuilder<Integer>().setDescription("State B").build();
+		transitionAB = TransitionBuilder.forExpectedInputs(stateB, 1).build();
 
-		stateC = new DefaultState<>("State C");
-		transitionBC = new EqualityTransition<>(stateC, 2);
+		stateC = new StateBuilder<Integer>().setDescription("State C").build();
+		transitionBC = TransitionBuilder.forExpectedInputs(stateC, 2).build();
 
-		stateD = new DefaultState<>("State D");
-		transitionCD = new EqualityTransition<>(stateD, 3);
+		stateD = new StateBuilder<Integer>().setDescription("State D").build();
+		transitionCD = TransitionBuilder.forExpectedInputs(stateD, 3).build();
 
-		graph = new StateGraph<>(stateA)
+		graph = new StateGraphBuilder<>(stateA)
 				.addTransition(stateA, transitionAB)
 				.addTransition(stateB, transitionBC)
-				.addTransition(stateC, transitionCD);
+				.addTransition(stateC, transitionCD)
+				.build();
 
 		// First set of (nested) composites
-		compositeX1 = new CompositeState<>("First inner composite");
-		compositeX1.addState(stateB);
-		transitionX1A = new EqualityTransition<>(stateA, 100);
-		compositeX1.addTransition(transitionX1A);
+		transitionX1A = TransitionBuilder.forExpectedInputs(stateA, 100).build();
+		compositeX1 = new CompositeStateBuilder<Integer>()
+				.setDescription("First inner composite")
+				.addTransition(transitionX1A)
+				.addState(stateB).build();
 
-		compositeX2 = new CompositeState<>("Second inner composite");
-		compositeX2.addState(stateC);
+		compositeX2 = new CompositeStateBuilder<Integer>()
+				.setDescription("Second inner composite")
+				.addState(stateC).build();
 
-		compositeX = new CompositeState<>("Outer composite");
-		compositeX.addComposite(compositeX1);
-		compositeX.addComposite(compositeX2);
-		transitionXA = new EqualityTransition<>(stateA, 100); // The same expected input as transitionX1A, to ensure that transitionX1A takes priority
-		compositeX.addTransition(transitionXA);
+		transitionXA = TransitionBuilder.forExpectedInputs(stateA, 100).build(); // The same expected input as transitionX1A, to ensure that transitionX1A takes priority
+		compositeX = new CompositeStateBuilder<Integer>()
+				.setDescription("Outer composite")
+				.addTransition(transitionXA)
+				.addCompositeState(compositeX1)
+				.addCompositeState(compositeX2).build();
 
 		// Second composite
-		compositeY = new CompositeState<>("Overlapping outer composite");
-		compositeY.addState(stateB);
-		compositeY.addTransition(new EqualityTransition<>(stateD, 200));
+		compositeY = new CompositeStateBuilder<Integer>()
+				.setDescription("Overlapping outer composite")
+				.addState(stateB)
+				.addTransition(TransitionBuilder.forExpectedInputs(stateD, 200).build())
+				.build();
 	}
 
 	@Test
 	public void testStateMachineStateTransitioning() {
-		StateMachine<Integer,Integer> machine = StateMachine.create(graph);
+		StateMachine<Integer,Integer> machine = StateMachineBuilder.forMatchingInputTypes(graph).build();
 
 		TestStateMachineEventListener<Integer> listener =
 				new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
@@ -121,7 +130,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testStateMachineStateTransitionPrecedence() {
-		StateMachine<Integer,Integer> machine = StateMachine.create(graph);
+		StateMachine<Integer,Integer> machine = StateMachineBuilder.forMatchingInputTypes(graph).build();
 		machine.transition(stateB);
 
 		TestStateMachineEventListener<Integer> listener = new TestStateMachineEventListener<>(EventType.ALL_TYPES_EXCEPT_INPUT_VALIDATION);
@@ -142,23 +151,23 @@ public class IntegrationTest {
 		// machine is able to queue the subsequent input rather than trying evaluate it
 		// immediately.
 
-		State<Integer> stateA = new DefaultState<>("A");
-		State<Integer> stateB = new DefaultState<>("B");
-		State<Integer> stateC = new DefaultState<>("C");
+		State<Integer> stateA = new StateBuilder<Integer>().setDescription("A").build();
+		State<Integer> stateB = new StateBuilder<Integer>().setDescription("B").build();
+		State<Integer> stateC = new StateBuilder<Integer>().setDescription("C").build();
 
-		StateGraph<Integer> graph = new StateGraph<>(stateA);
-		final StateMachine<Integer, Integer> machine = StateMachine.create(graph);
-		graph.addTransition(stateA, new EqualityTransition<Integer>(stateB, 1) {
-			@Override
-			public void onTransition(Integer integer) {
-				machine.evaluateInput(2);
-			}
-		});
-		graph.addTransition(stateB, new EqualityTransition<>(stateC, 2));
+		Holder<StateMachine<Integer, Integer>> machineHolder = new Holder<>();
+		StateGraph<Integer> graph = new StateGraphBuilder<>(stateA)
+				.addTransition(stateA, TransitionBuilder.forExpectedInputs(stateB, 1)
+						.setTransitionListener(input -> machineHolder.getValue().evaluateInput(2))
+						.build())
+				.addTransition(stateB, TransitionBuilder.forExpectedInputs(stateC, 2).build())
+				.build();
+		StateMachine<Integer, Integer> machine = StateMachineBuilder.forMatchingInputTypes(graph).build();
+		machineHolder.setValue(machine);
 
 		machine.start();
 		machine.evaluateInput(1);
 
-		assertThat(machine.getState(), is(stateC));
+		assertThat(machine.getState()).isEqualTo(stateC);
 	}
 }

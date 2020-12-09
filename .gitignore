@@ -1,7 +1,9 @@
+/*.iml
 /.project
 /.classpath
-/target
-/.settings
-/*.iml
+/.gradle
 /.idea
+/.settings
+/build
 /TODO.txt
+/TODO.md

@@ -1,5 +1,7 @@
 package com.coalminesoftware.jstately.collection;
 
+import javax.annotation.Nullable;
+
 /**
  * Wrapper for a single value.
  */
@@ -8,15 +10,16 @@ public class Holder<T> {
 
 	public Holder() { }
 
-	public Holder(T value) {
+	public Holder(@Nullable T value) {
 		this.value = value;
 	}
 
+	@Nullable
 	public T getValue() {
 		return value;
 	}
 
-	public void setValue(T value) {
+	public void setValue(@Nullable T value) {
 		this.value = value;
 	}
 }

@@ -23,7 +23,7 @@ public final class MockingUtils {
 		Transition<Input> transition = mock(Transition.class);
 
 		doReturn(head).when(transition).getHead();
-		doReturn(valid).when(transition).isValid((Input) isNull());
+		doReturn(valid).when(transition).isValid(isNull());
 		doReturn(valid).when(transition).isValid(any(transitionInputType));
 
 		return transition;

@@ -1,93 +1,48 @@
 package com.coalminesoftware.jstately.graph;
 
 import com.coalminesoftware.jstately.collection.Multimap;
-import com.coalminesoftware.jstately.graph.composite.CompositeState;
-import com.coalminesoftware.jstately.graph.state.FinalState;
+import com.coalminesoftware.jstately.graph.state.CompositeState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.machine.StateMachine;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-import static com.coalminesoftware.jstately.ParameterValidation.assertNotNull;
+import static java.util.Objects.requireNonNull;
 
 /** Representation of a state graph. */
 public class StateGraph<TransitionInput> {
 	/** Key under which global transitions are stored in {@link #transitionsByTail}. */
-	private static final State GLOBAL_TRANSITION_KEY = null;
+	static final State<?> GLOBAL_TRANSITION_KEY = null;
 
-	private State<TransitionInput> startState;
-	private Multimap<State<TransitionInput>, Transition<TransitionInput>> transitionsByTail = new Multimap<>();
+	private final State<TransitionInput> startState;
+	private final Multimap<State<TransitionInput>, Transition<TransitionInput>> transitionsByTail;
+	private final StartListener startListener;
 
-	public StateGraph() { }
-
-	public StateGraph(State<TransitionInput> startState) {
-		setStartState(startState);
-	}
-
-	public State<TransitionInput> getStartState() {
-		return startState;
-	}
-
-	public StateGraph<TransitionInput> setStartState(State<TransitionInput> startState) {
-		if(startState instanceof FinalState) {
-			throw new IllegalArgumentException("Start state cannot be an instance of FinalState");
-		}
-
-		this.startState = startState;
-
-		return this;
-	}
-
-	public StateGraph<TransitionInput> addTransition(State<TransitionInput> transitionTail, Transition<TransitionInput> transition) {
-		assertNotNull("Tail state is required.", transitionTail);
-		assertTransitionValidity(transition);
-		transitionsByTail.put(transitionTail,transition);
-
-		return this;
-	}
-
-	public StateGraph<TransitionInput> addSelfTransition(Transition<TransitionInput> transition) {
-		assertTransitionValidity(transition);
-		transitionsByTail.put(transition.getHead(),transition);
-
-		return this;
-	}
-
-	public Set<Transition<TransitionInput>> getTransitions() {
-		return new HashSet<>(transitionsByTail.values());
-	}
-
-	/**
-	 * Adds a transitions that will be evaluated if no valid transition is found for the given
-	 * input from the current state or enclosing {@link CompositeState}.
-	 */
-	@SuppressWarnings("unchecked")
-	public StateGraph<TransitionInput> addGlobalTransition(Transition<TransitionInput> transition) {
-		assertTransitionValidity(transition);
-		transitionsByTail.put((State<TransitionInput>) GLOBAL_TRANSITION_KEY, transition);
-
-		return this;
-	}
-
-	/** @return All of the graph's transitions that apply from any state. */
-	@SuppressWarnings("unchecked")
-	public Set<Transition<TransitionInput>> getGlobalTransitions() {
-		return Collections.unmodifiableSet(
-				transitionsByTail.get((State<TransitionInput>) GLOBAL_TRANSITION_KEY));
+	StateGraph(@Nonnull State<TransitionInput> startState,
+			@Nonnull Multimap<State<TransitionInput>, Transition<TransitionInput>> transitionsByTail,
+			@Nullable StartListener startListener) {
+		this.startState = requireNonNull(startState);
+		this.transitionsByTail = requireNonNull(transitionsByTail);
+		this.startListener = startListener;
 	}
 
 	@SuppressWarnings("unchecked")
-	public Transition<TransitionInput> findFirstValidTransitionFromState(State<TransitionInput> tailState, TransitionInput input) {
-		for(Transition<TransitionInput> transition : transitionsByTail.get(tailState)) {
+	@Nullable
+	public Transition<TransitionInput> findFirstValidTransitionFromState(
+			@Nonnull State<TransitionInput> state,
+			@Nullable TransitionInput input) {
+		for(Transition<TransitionInput> transition : transitionsByTail.get(state)) {
 			if(transition.isValid(input)) {
 				return transition;
 			}
 		}
 
-		for(CompositeState<TransitionInput> composite : tailState.getComposites()) {
+		// A state can belong to multiple unrelated composites, each of with might be nested in
+		// another. For each composite, traverse to its root, looking for a valid transition at
+		// each level.
+		for(CompositeState<TransitionInput> composite : state.getComposites()) {
 			while(composite != null) {
 				Transition<TransitionInput> transition = composite.findFirstValidTransition(input);
 				if(transition != null) {
@@ -107,11 +62,19 @@ public class StateGraph<TransitionInput> {
 		return null;
 	}
 
-	private void assertTransitionValidity(Transition<TransitionInput> transition) {
-		assertNotNull("Transition is required.", transition);
-		assertNotNull("A transition head is required.", transition.getHead());
+	public void notifyStartListener() {
+		if (startListener != null) {
+			startListener.onStart();
+		}
 	}
 
-	/** Called when a machine traversing the graph starts. See {@link StateMachine#start()}. */
-	public void onStart() {}
+	@Nonnull
+	public State<TransitionInput> getStartState() {
+		return startState;
+	}
+
+	public interface StartListener {
+		/** Called when a machine traversing the graph starts. See {@link StateMachine#start()}. */
+		void onStart();
+	}
 }

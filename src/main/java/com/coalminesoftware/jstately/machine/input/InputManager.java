@@ -2,23 +2,29 @@ package com.coalminesoftware.jstately.machine.input;
 
 import com.coalminesoftware.jstately.machine.StateMachine;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
-import static com.coalminesoftware.jstately.ParameterValidation.assertNotNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Queues a {@link StateMachine}'s inputs and convert them to transition inputs using the provided
  * {@link InputAdapter}.
  */
 public class InputManager<MachineInput,TransitionInput> {
-	private Queue<MachineInput> machineInputs = new LinkedList<>();
-	private InputAdapter<MachineInput,TransitionInput> inputAdapter;
+	private final Queue<MachineInput> machineInputs = new LinkedList<>();
+	private final InputAdapter<MachineInput,TransitionInput> inputAdapter;
 	private Iterator<TransitionInput> transitionInputs;
 
-	public void queueInput(MachineInput input) {
+	public InputManager(@Nonnull InputAdapter<MachineInput, TransitionInput> inputAdapter) {
+		this.inputAdapter = requireNonNull(inputAdapter);
+	}
+
+	public void queueInput(@Nullable MachineInput input) {
 		machineInputs.add(input);
 	}
 
@@ -26,6 +32,7 @@ public class InputManager<MachineInput,TransitionInput> {
 		return (transitionInputs != null && transitionInputs.hasNext()) || advance();
 	}
 
+	@Nullable
 	public TransitionInput next() {
 		if(!hasNext()) {
 			throw new NoSuchElementException("No remaining inputs.");
@@ -49,14 +56,5 @@ public class InputManager<MachineInput,TransitionInput> {
 		}
 
 		return false;
-	}
-
-	public void setInputAdapter(InputAdapter<MachineInput, TransitionInput> inputAdapter) {
-		assertNotNull("An input adapter is required", inputAdapter);
-		this.inputAdapter = inputAdapter;
-	}
-
-	public boolean hasInputAdapter() {
-		return inputAdapter != null;
 	}
 }

@@ -4,151 +4,167 @@ jStately
 jStately is a state machine library written in Java. Its goal is to allow developers to handcraft
 maintainable, readable state graphs in an object-oriented way.
 
-It was written with OOD principles and extensibility in mind. Users build `StateGraph`s primarily
-from `State`s and `Transition`s, overriding methods for events like entering a state
-(`State#onEnter()`), exiting a state (`State#onExit()`) or following a transition
-(`Transition#onTransition`).
+It was written with OOD principles in mind. Users build `StateGraph`s primarily from `State`s and
+`Transition`s with listeners for events like entering a state, exiting a state or following a
+transition. Whether a `Transition` is valid for a given input is determined by a `Predicate`. Users
+can provide predicates with whatever arbitrary logic they would like. However, `TransitionBuilder`
+allows  users to easily build a transition that's valid for a given input.
 
-jStately relies heavily on interfaces but also provides sensible default implementations. For
-example, a user could implement a `Transition` that determines whether it is valid for a given
-input based on arbitrary business logic. But the provided `EqualityTransition` implementation will
-appeal to users whose transitions are based simply on whether a certain input value was
-encountered.
+Although jStately does not aim to implement a particular state machine definition, common concepts
+like composite states and submachines are present.
 
-Although jStately does not aim to implement a particular state machine definition, features from
-common definitions are present. For example, `CompositeState`s are similar to those in UML.
-Composite states form a collection of `State`s, which has its own entry/exit callbacks and can
-have transitions, which are evaluated while the machine is in any of the states it contains.
+Composites
+---
+
+A composite state forms a collection of `State`s. It has its own entry and exit callbacks and can
+have its own transitions. Composite states can be nested. When a state machine fails to find a
+valid transition from its current state, it evaluates transitions from its state's composite,
+followed by its composite's composite, and so on.
 
 Example 
 -------
 
-The example below implements a state graph that models the behavior of the ghost characters in the
-classic video game Pac-Man. For those not familiar with the game, a brief summary can be found on
-[Wikipedia](https://en.wikipedia.org/wiki/Pac-Man#Gameplay). A simplified diagram of a ghost's
-behavior might look like this:
+The state graph below models the behavior of the ghost characters in the classic video game
+Pac-Man. For those not familiar with the game, a brief summary can be found on
+[Wikipedia](https://en.wikipedia.org/wiki/Pac-Man#Gameplay).
 
 ![Pac-Man Ghost state graph](readme/PacManGhostStateGraph.png) 
 
 Defining the states and transitions in jStately might look something like this:
 
 ```java
-public class GhostStateGraph extends StateGraph<GameEvent> {
-    public GhostStateGraph() {
-        State<GameEvent> wanderingState = new DefaultState<>("Wandering maze");
-        State<GameEvent> chasingState = new DefaultState<>("Chasing Pac-Man");
-        State<GameEvent> fleeingState = new DefaultState<>("Fleeing Pac-Man");
-        State<GameEvent> returningHomeState = new DefaultState<>("Returning home");
+State<GameEvent> wanderingState = new StateBuilder<GameEvent>().setDescription("Wandering maze").build();
+State<GameEvent> chasingState = new StateBuilder<GameEvent>().setDescription("Chasing Pac-Man").build();
+State<GameEvent> fleeingState = new StateBuilder<GameEvent>().setDescription("Fleeing Pac-Man").build();
+State<GameEvent> returningHomeState = new StateBuilder<GameEvent>().setDescription("Returning home").build();
 
-        setStartState(wanderingState);
+new CompositeStateBuilder<GameEvent>()
+        .addState(wanderingState)
+        .addState(chasingState)
+        .addTransition(TransitionBuilder.forExpectedInputs(fleeingState, GameEvent.POWER_PELLET_EATEN).build());
 
-        addTransition(wanderingState,
-                new EqualityTransition<>(chasingState, GameEvent.PACMAN_SPOTTED));
-        addTransition(chasingState,
-                new EqualityTransition<>(wanderingState, GameEvent.PACMAN_LOST));
-        addTransition(fleeingState,
-                new EqualityTransition<>(wanderingState, GameEvent.POWER_PELLET_WORE_OFF));
-        addTransition(fleeingState,
-                new EqualityTransition<GameEvent>(returningHomeState, GameEvent.GHOST_EATEN));
-        addTransition(returningHomeState,
-                new EqualityTransition<>(wanderingState, GameEvent.GHOST_REACHED_HOME));
-
-        new CompositeState<>(wanderingState, chasingState)
-                .addTransition(new EqualityTransition<>(fleeingState, GameEvent.POWER_PELLET_EATEN));
-    }
-}
+StateGraph<GameEvent> stateGraph = new StateGraphBuilder<>(wanderingState)
+        .addTransition(wanderingState, TransitionBuilder.forExpectedInputs(chasingState, GameEvent.PACMAN_SPOTTED).build())
+        .addTransition(chasingState, TransitionBuilder.forExpectedInputs(wanderingState, GameEvent.PACMAN_LOST).build())
+        .addTransition(fleeingState, TransitionBuilder.forExpectedInputs(wanderingState, GameEvent.POWER_PELLET_WORE_OFF).build())
+        .addTransition(fleeingState, TransitionBuilder.forExpectedInputs(returningHomeState, GameEvent.GHOST_EATEN).build())
+        .addTransition(returningHomeState, TransitionBuilder.forExpectedInputs(wanderingState, GameEvent.GHOST_REACHED_HOME).build())
+        .build();
 ```
 
-A `StateGraph` defines the relationship between its states but the graph itself is stateless. It is
-a `StateMachine` (which is given a graph during construction) that keeps track of the current state
-and evaluates inputs in order to traverse its graph. A `StateMachine` is initialized like so:
+A `StateGraph` defines the relationships between its states but it is a `StateMachine` that has a
+current state and evaluates inputs in order to  traverse the graph. A machine is initialized like 
+so:
 
 ```java
 StateMachine<GameEvent, GameEvent> machine =
-        StateMachine.create(new GhostStateGraph());
+        StateMachineBuilder.forMatchingInputTypes(stateGraph).build();
 
-// Initializes the machine's state to its graph's start state. Doing so calls
-// StateGraph#onStart() and State#onEnter(), as well as CompositeState#onEnter()
-// on any composite states that include the start state.
+// Initializes the machine's state to its graph's start state. Doing so calls onStart() on the
+// Graph's StartListener, onEnter() on start state's EntranceListener, as well as onEnter() on the
+// EntranceListener of any CompositeState that contains the start state.
 machine.start();
 ```
 
 As the game continues and it is determined that important things have happened (i.e., things that
 may or may not cause the machine to transition states, according to our graph,) an event would be
-evaluated by the machine with a call to `machine.evaluateInput(GameEvent.PACMAN_SPOTTED)`.
+evaluated by the machine with a call like `machine.evaluateInput(GameEvent.PACMAN_SPOTTED)`.
 
-Keeping track of a system's current state _can_ be useful on its own. But a more powerful use for a
-graph is to use it to drive other behaviors. For example, suppose that a developer wants certain
-things to happen as the machine transitions between states. One such example might be rendering a
-ghost in blue while fleeing Pac-Man. To do that, a developer might define the "fleeing" state like
-this:
-
-```java
-new DefaultState<GameEvent>("Fleeing Pac-Man") {
-    @Override
-    public void onEnter() {
-        changeGhostColorToBlue();
-    }
-
-    @Override
-    public void onExit() {
-        restoreOriginalGhostColor();
-    }
-};
-```
-
-Alternatively, those same methods (`changeGhostColorToBlue()` and `restoreOriginalGhostColor()`)
-could be called from the transitions leading to and from `fleeingState`, like so:
+Although developer's can inspect a state machine's current state, that is generally discouraged in
+favor of adding listeners for entering a state, exiting a state or traversing a transition. In our
+Pac-Man example, suppose that we want a ghost's color to alternate between blue and white while
+fleeing Pac-Man. That could be accomplished by defining the "fleeing" state like so:
 
 ```java
-new EqualityTransition<GameEvent>(fleeingState, GameEvent.POWER_PELLET_EATEN) {
-    @Override
-    public void onTransition(GameEvent gameEvent) {
-        changeGhostColorToBlue();
-    }
-}
+State<GameEvent> fleeingState = new StateBuilder<GameEvent>()
+        .setDescription("Fleeing Pac-Man")
+        .setEntranceListener(() -> ghost.startAnimatingColor())
+        .setExitListener(() -> ghost.restoreNormalColor())
+        .build();
 ```
 
-Submachine States
------------------
+Alternatively, those same methods (`startAnimatingColor()` and `restoreNormalColor()`) could be
+called from the transitions leading to and from `fleeingState`, like so:
 
-Sometimes it's useful to define a graph that is reused within another graph. In these cases, a
-`SubmachineState` can be used. A submachine state is initialized with a graph that has the same
-input type as its parent graph. When a state machine enters a submachine state, it creates a new
-state machine internally and future `evaluateInput()` calls are delegated to the child state
-machine until it reaches a special `State` subclass – `FinalState`. When that happens, the value
-returned by the final state's `getResult()` method is evaluated as an input to the parent state
-machine, allowing it to transition out of the submachine state.
+```java
+TransitionBuilder.forExpectedInputs(fleeingState, GameEvent.POWER_PELLET_EATEN)
+        .setTransitionListener(gameEvent -> ghost.startAnimatingColor())
+        .build()
+```
+
+Composites
+---
+
+A composite state forms a collection of `State`s. It has its own entry and exit callbacks and can
+have its own transitions. Composite states can be nested. When a state machine fails to find a
+valid transition from its current state, it evaluates transitions from its state's composite,
+followed by its composite's composite, and so on.
+
+Submachines
+---
+
+A `SubmachineState` allows a state graph to be embedded within another. This allows a
+self-contained graph to be defined once and re-used in multiple graphs or multiple times within a
+single graph. When building a `SubmachineState`, a `StateGraph` with the same input type is
+required.  When a machine enters a submachine state, it creates a new state machine instance
+internally. Subsequent inputs are delegated to the new machine until it reaches a `FinalState`.
+When the inner machine reaches a final state, the outer machine evaluates the value of
+`FinalState#getResult()` (also of type `InputType`) on itself,  allowing it to transition out of
+the `SubmachineState`.
+
+In general, a `SubmachineState`'s graph should have at least one `FinalState`. Each one can have a
+different result, allowing the outer machine to follow a different transition out of the
+`SubmachineState`.
 
 There is no set limit on how deeply nested state graphs can be using `SubmachineState`.
 
 Input Adapters
 --------------
 
-While using jStately, you will probably notice that a `StateGraph` uses generics to specify the
-type of input its transitions evaluate. But a `StateMachine` has _two_ type parameters –
-`MachineInput` and `TransitionInput`. jStately allows a machine to be initialized with an
-`InputAdapter` that allows an input given to the machine to be transformed in to any number of
-transition inputs.
+While using jStately, you will notice that a `StateGraph` uses generics to specify the type of
+input its transitions evaluate, but a `StateMachine` has two type parameters – `MachineInput` and
+`TransitionInput`. The Example section above creates a machine using
+`StateMachineBuilder.forMatchingInputTypes()`, which builds a machine that uses the same type for
+both.
 
-A simple example is an adapter that allows a machine to takes a `String` and iterate through its
-characters, evaluating each individually. A less trivial example might be an adapter that takes a
-widget ID and retrieves the Widget object from a database.
+Alternatively, developers can provide an `InputAdapter` that the machine uses to transform its
+input into zero or more transition inputs. The `InputAdapter` interface has a single method that
+takes a `MachineInput` and returns an `Iterator<TransitionInput>`.  
 
-When no transformation is needed (which is often the case,) the provided `PassthroughInputAdapter`
-can be used. It is used by default when constructing a machine using `StateMachine.create()`, as in
-the example above.
+A simple example is an adapter that allows a machine to takes a `String` as its input, iterating
+through its characters and evaluating each as an individual transition input.
+
+```java
+public class StringToCharacterInputAdapter implements InputAdapter<String, Character> {
+    @Override
+    public Iterator<Character> adaptInput(String input) {
+        return new Iterator<>() {
+            private int index = 0;
+
+            @Override
+            public boolean hasNext() {
+                return input != null && index < input.length();
+            }
+
+            @Override
+            public Character next() {
+                return input.charAt(index++);
+            }
+        };
+    }
+}
+```
+
+A less trivial example is an adapter that allows the machine to take a list of widget IDs and
+retrieves the corresponding `Widget` objects from a database. Such an adapter would implement
+`InputAdapter<List<Integer>, Widget>`.
 
 Callbacks
 ---------
 
-`StateMachineEventListener`s provide callbacks for a number of events that happen within a state
-machine. They can be very helpful for debugging and are added to a machine using
-`StateMachine#addEventListener()`.
+`StateMachineEventListener` defines callbacks for a number of events that happen within a state
+machine. They can be very helpful for debugging and are added to a machine using either
+`StateMachine#addEventListener()` or the corresponding call on `StateMachineBuilder`.
 
-Because the interface has so many methods, `DefaultStateMachineEventListener` is provided as a
-no-op implementation for developers to extend, so they can override only the methods they are
-interested in.
-
-For developers interested in seeing information regarding all of the events,
-`ConsoleStateMachineEventListener` logs `System.out`.
+For developers interested in logging all of the events to a `PrintStream` such as `System.out`,
+see `PrintStreamStateMachineEventListener`.

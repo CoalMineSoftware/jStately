@@ -1,11 +1,10 @@
 package com.coalminesoftware.jstately.test;
 
 import com.coalminesoftware.jstately.collection.CollectionUtil;
-import com.coalminesoftware.jstately.graph.composite.CompositeState;
+import com.coalminesoftware.jstately.graph.state.CompositeState;
 import com.coalminesoftware.jstately.graph.state.State;
 import com.coalminesoftware.jstately.graph.transition.Transition;
 import com.coalminesoftware.jstately.machine.StateMachine;
-import com.coalminesoftware.jstately.machine.listener.DefaultStateMachineEventListener;
 import com.coalminesoftware.jstately.machine.listener.StateMachineEventListener;
 
 import java.util.ArrayList;
@@ -13,15 +12,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.truth.Truth.assertWithMessage;
 import static junit.framework.TestCase.fail;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 /** {@link StateMachineEventListener} implementation for use in test cases. This listener stores events that occur,
  * allowing users to assert that a certain sequence of events occurred, using {@link #assertEventsOccurred(Event...)}. */
-public class TestStateMachineEventListener<TransitionInput> extends DefaultStateMachineEventListener<TransitionInput> {
-	private List<Event> observedEvents = new ArrayList<>();
-	private Set<EventType> allowedEventTypes;
+public class TestStateMachineEventListener<TransitionInput> implements StateMachineEventListener<TransitionInput> {
+	private final List<Event> observedEvents = new ArrayList<>();
+	private final Set<EventType> allowedEventTypes;
 
 	/** Creates a listener that records only the given events, or all events if none are provided. */
 	public TestStateMachineEventListener(EventType... allowedEventTypes) {
@@ -32,20 +30,24 @@ public class TestStateMachineEventListener<TransitionInput> extends DefaultState
 		}
 	}
 
-	/** Asserts that the given Events (and only the given Events) occurred in the given order. Keep in
-	 * mind that the observed Events are limited to the EventTypes given when constructing the listener. */
+	/**
+	 * Asserts that the given Events (and only the given Events) occurred in the given order. Keep in
+	 * mind that the observed Events are limited to the EventTypes given when constructing the listener.
+	 */
 	public void assertEventsOccurred(Event... expectedEvents) {
 		assertEventsOccurred(true, expectedEvents);
 	}
 
-	/** Asserts that the given Events (and only the given Events) occurred in the given order. Keep
+	/**
+	 * Asserts that the given Events (and only the given Events) occurred in the given order. Keep
 	 * in mind that the observed Events are limited to the EventTypes given when constructing the
-	 * listener. This method also clears the list of observed events after making the assertion. */
+	 * listener. This method also clears the list of observed events after making the assertion.
+	 */
 	public void assertEventsOccurred(boolean ignoreMachine, Event... expectedEvents) {
 		List<Event> expectedEventList = Arrays.asList(expectedEvents);
-		assertThat("The exact sequence of expected events was not observed. Expected: " + expectedEventList + " but was: " + observedEvents,
-				testEventListEquality(ignoreMachine, expectedEventList, observedEvents),
-				is(true));
+		assertWithMessage("The exact sequence of expected events was not observed.")
+				.that(testEventListEquality(ignoreMachine, expectedEventList, observedEvents))
+				.isTrue();
 
 		clearObservedEvents();
 	}

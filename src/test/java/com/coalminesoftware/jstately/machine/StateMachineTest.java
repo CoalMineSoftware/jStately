@@ -1,11 +1,12 @@
 package com.coalminesoftware.jstately.machine;
 
 import com.coalminesoftware.jstately.graph.StateGraph;
-import com.coalminesoftware.jstately.graph.state.DefaultState;
-import com.coalminesoftware.jstately.graph.state.DefaultSubmachineState;
+import com.coalminesoftware.jstately.graph.StateGraphBuilder;
 import com.coalminesoftware.jstately.graph.state.State;
+import com.coalminesoftware.jstately.graph.state.StateBuilder;
 import com.coalminesoftware.jstately.graph.state.SubmachineState;
-import com.coalminesoftware.jstately.graph.transition.EqualityTransition;
+import com.coalminesoftware.jstately.graph.state.SubmachineStateBuilder;
+import com.coalminesoftware.jstately.graph.transition.TransitionBuilder;
 import com.coalminesoftware.jstately.machine.input.InputAdapter;
 import com.coalminesoftware.jstately.test.Event;
 import com.coalminesoftware.jstately.test.EventType;
@@ -13,29 +14,18 @@ import com.coalminesoftware.jstately.test.TestStateMachineEventListener;
 import org.junit.Test;
 
 import static com.coalminesoftware.jstately.test.MockingUtils.mockObjectTransition;
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.mockito.Mockito.doReturn;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.mockito.Mockito.mock;
 
 public class StateMachineTest {
 	@Test
 	public void testHasStarted() {
 		StateMachine<Object,Object> machine = createStateMachineWithMockDependencies();
-		assertThat(machine.hasStarted(), is(false));
+		assertThat(machine.hasStarted()).isFalse();
 
-		machine.overrideState(new DefaultState<>());
-		assertThat(machine.hasStarted(), is(true));
-	}
-
-	@Test(expected = IllegalStateException.class)
-	public void testStart_graphWithoutStartState() {
-		StateGraph<Object> graph = mock(StateGraph.class);
-		doReturn(null).when(graph).getStartState();
-
-		StateMachine<Object, Object> machine = StateMachine.create(graph);
-		machine.start();
+		machine.overrideState(new StateBuilder<>().build());
+		assertThat(machine.hasStarted()).isTrue();
 	}
 
 	@Test
@@ -43,21 +33,20 @@ public class StateMachineTest {
 		// Test scenario where the machine is in a submachine state when evaluateInput()
 		// is called, in which case it should delegate the input to the submachine.
 
-		State<Object> innerState = new DefaultState<>();
-		StateGraph<Object> innerGraph = new StateGraph<>(innerState);
+		State<Object> innerState = new StateBuilder<>().build();
+		StateGraph<Object> innerGraph = new StateGraphBuilder<>(innerState).build();
 
-		State<Object> intermediateState = new DefaultSubmachineState<>(null, innerGraph);
-		StateGraph<Object> intermediateGraph = new StateGraph<>(intermediateState);
+		State<Object> intermediateState = new SubmachineStateBuilder<>(innerGraph).build();
+		StateGraph<Object> intermediateGraph = new StateGraphBuilder<>(intermediateState).build();
 
-		State<Object> outerState = new DefaultSubmachineState<>(null, intermediateGraph);
-		StateGraph<Object> outerGraph = new StateGraph<>(outerState);
+		State<Object> outerState = new SubmachineStateBuilder<>(intermediateGraph).build();
+		StateGraph<Object> outerGraph = new StateGraphBuilder<>(outerState).build();
 
-		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
+		StateMachine<Object,Object> machine = StateMachineBuilder.forMatchingInputTypes(outerGraph).build();
 		machine.start();
 
-		assertThat("Machine could't be initialized as expected.",
-				machine.getStates(),
-				is(asList(outerState, intermediateState, innerState)));
+		assertWithMessage("Machine couldn't be initialized as expected.")
+				.that(machine.getStates()).containsExactly(outerState, intermediateState, innerState).inOrder();
 
 		TestStateMachineEventListener<Object> listener = new TestStateMachineEventListener<>(EventType.INPUT_EVALUATED);
 		machine.addEventListener(listener);
@@ -84,15 +73,16 @@ public class StateMachineTest {
 		StateGraph<Object> intermediateGraph = createStateGraphWithSubmachineState(innerGraph);
 		StateGraph<Object> outerGraph = createStateGraphWithSubmachineState(intermediateGraph);
 
-		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
+		StateMachine<Object,Object> machine = StateMachineBuilder.forMatchingInputTypes(outerGraph).build();
 		TestStateMachineEventListener<Object> listener = new TestStateMachineEventListener<>();
 		machine.addEventListener(listener);
 
 		machine.enterState(null, outerGraph.getStartState());
 
-		assertThat("Expected to see each graph's start state, ordered from outer to inner",
-				machine.getStates(),
-				is(asList(outerGraph.getStartState(), intermediateGraph.getStartState(), innerGraph.getStartState())));
+		assertWithMessage("Expected to see each graph's start state, ordered from outer to inner")
+				.that(machine.getStates())
+				.containsExactly(outerGraph.getStartState(), intermediateGraph.getStartState(), innerGraph.getStartState())
+				.inOrder();
 
 		listener.assertEventsOccurred(
 				Event.forStateEntry(outerGraph.getStartState()),
@@ -101,14 +91,13 @@ public class StateMachineTest {
 	}
 
 	private StateGraph<Object> createGraphWithSingleNonSubmachineState() {
-		return new StateGraph<>(new DefaultState<>());
+		return new StateGraphBuilder<>(new StateBuilder<>().build()).build();
 	}
 
 	private StateGraph<Object> createStateGraphWithSubmachineState(StateGraph<Object> nestedStateGraph) {
-		DefaultSubmachineState<Object> submachineState = new DefaultSubmachineState<>();
-		submachineState.setStateGraph(nestedStateGraph);
+		SubmachineState<Object> submachineState = new SubmachineStateBuilder<>(nestedStateGraph).build();
 
-		return new StateGraph<>(submachineState);
+		return new StateGraphBuilder<>(submachineState).build();
 	}
 
 	@Test
@@ -117,30 +106,34 @@ public class StateMachineTest {
 		// On a state graph with multiple levels of nested graphs, enter the top-level SubmachineState
 		// and ensure that the machine initializes to the start state of the nested graphs
 
-		State<Object> innerFirstState = new DefaultState<>("inner/first");
-		State<Object> innerSecondState = new DefaultState<>("inner/second");
-		StateGraph<Object> innerGraph = new StateGraph<>(innerFirstState)
-				.addTransition(innerFirstState, mockObjectTransition(true, innerSecondState));
+		State<Object> innerFirstState = new StateBuilder<>().setDescription("inner/first").build();
+		State<Object> innerSecondState = new StateBuilder<>().setDescription("inner/second").build();
+		StateGraph<Object> innerGraph = new StateGraphBuilder<>(innerFirstState)
+				.addTransition(innerFirstState, mockObjectTransition(true, innerSecondState))
+				.build();
 
-		State<Object> intermediateFirstState = new DefaultState<>("intermediate/first");
-		SubmachineState<Object> intermediateSecondState = new DefaultSubmachineState<>("intermediate/second", innerGraph);
-		StateGraph intermediateGraph = new StateGraph<>(intermediateSecondState)
-				.addTransition(intermediateFirstState, mockObjectTransition(true, intermediateSecondState));
+		State<Object> intermediateFirstState = new StateBuilder<>().setDescription("intermediate/first").build();
+		SubmachineState<Object> intermediateSecondState = new SubmachineStateBuilder<>(innerGraph).setDescription("intermediate/second").build();
+		StateGraph<Object> intermediateGraph = new StateGraphBuilder<>(intermediateSecondState)
+				.addTransition(intermediateFirstState, mockObjectTransition(true, intermediateSecondState))
+				.build();
 
-		State<Object> outerFirstState = new DefaultState<>("outer/first");
-		SubmachineState<Object> outerSecondState = new DefaultSubmachineState<>("outer/second", intermediateGraph);
-		StateGraph outerGraph = new StateGraph<>(outerSecondState)
-				.addTransition(outerFirstState, mockObjectTransition(true, outerSecondState));
+		State<Object> outerFirstState = new StateBuilder<>().setDescription("outer/first").build();
+		SubmachineState<Object> outerSecondState = new SubmachineStateBuilder<>(intermediateGraph).setDescription("outer/second").build();
+		StateGraph<Object> outerGraph = new StateGraphBuilder<>(outerSecondState)
+				.addTransition(outerFirstState, mockObjectTransition(true, outerSecondState))
+				.build();
 
-		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
+		StateMachine<Object,Object> machine = StateMachineBuilder.forMatchingInputTypes(outerGraph).build();
 		TestStateMachineEventListener<Object> listener = new TestStateMachineEventListener<>();
 		machine.addEventListener(listener);
 
 		machine.enterState(null, outerSecondState, intermediateSecondState, innerSecondState);
 
-		assertThat("Expected the machine's states to match the states provided to enterState().",
-				machine.getStates(),
-				is(asList(outerSecondState, intermediateSecondState, innerSecondState)));
+		assertWithMessage("Expected the machine's states to match the states provided to enterState().")
+				.that(machine.getStates())
+				.containsExactly(outerSecondState, intermediateSecondState, innerSecondState)
+				.inOrder();
 
 		listener.assertEventsOccurred(
 				Event.forStateEntry(outerSecondState),
@@ -155,12 +148,13 @@ public class StateMachineTest {
 		StateGraph<Object> intermediateGraph = createStateGraphWithSubmachineState(innerGraph);
 		StateGraph<Object> outerGraph = createStateGraphWithSubmachineState(intermediateGraph);
 
-		StateMachine<Object,Object> machine = StateMachine.create(outerGraph);
+		StateMachine<Object,Object> machine = StateMachineBuilder.forMatchingInputTypes(outerGraph).build();
 
 		machine.start();
-		assertThat("State machine could not be initialized for test.",
-				machine.getStates(),
-				is(asList(outerGraph.getStartState(), intermediateGraph.getStartState(), innerGraph.getStartState())));
+		assertWithMessage("State machine could not be initialized for test.")
+				.that(machine.getStates())
+				.containsExactly(outerGraph.getStartState(), intermediateGraph.getStartState(), innerGraph.getStartState())
+				.inOrder();
 
 		TestStateMachineEventListener<Object> listener = new TestStateMachineEventListener<>();
 		machine.addEventListener(listener);
@@ -175,34 +169,32 @@ public class StateMachineTest {
 
 	@Test
 	public void testEvaluateInputWithNullInput() {
-		State<Integer> stateS = new DefaultState<>("S");
-		State<Integer> stateA = new DefaultState<>("A");
+		State<Integer> stateS = new StateBuilder<Integer>().setDescription("S").build();
+		State<Integer> stateA = new StateBuilder<Integer>().setDescription("A").build();
 
-		StateGraph<Integer> graph = new StateGraph<>(stateS)
-				.addTransition(stateS, new EqualityTransition<>(stateA, null));
-		StateMachine<Integer, Integer> machine = StateMachine.create(graph);
+		StateGraph<Integer> graph = new StateGraphBuilder<>(stateS)
+				.addTransition(stateS, TransitionBuilder.forExpectedInputs(stateA, null, null).build())
+				.build();
+		StateMachine<Integer, Integer> machine = StateMachineBuilder.forMatchingInputTypes(graph).build();
 		machine.start();
 
-		assertThat("Machine expected to start in its graph's start state",
-				machine.getState(),
-				is(graph.getStartState()));
+		assertWithMessage("Machine expected to start in its graph's start state")
+				.that(machine.getState())
+				.isEqualTo(graph.getStartState());
 
 		// Test input that should not cause a transition
 		machine.evaluateInput(1);
-		assertThat("Machine expected to stay in ",
-				machine.getState(),
-				is(graph.getStartState()));
+		assertWithMessage("Machine expected to stay in ")
+				.that(machine.getState()).isEqualTo(graph.getStartState());
 
 		// Ensure that null input gets evaluated
 		machine.evaluateInput(null);
-		assertThat("Machine expected to have transitioned",
-				machine.getState(),
-				is(stateA));
+		assertWithMessage("Machine expected to have transitioned")
+				.that(machine.getState())
+				.isEqualTo(stateA);
 	}
 
 	private static StateMachine<Object, Object> createStateMachineWithMockDependencies() {
-		return new StateMachine<Object,Object>(
-				mock(StateGraph.class),
-				mock(InputAdapter.class));
+		return new StateMachineBuilder<Object,Object>(mock(StateGraph.class), mock(InputAdapter.class)).build();
 	}
 }

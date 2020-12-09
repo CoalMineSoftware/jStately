@@ -13,8 +13,7 @@ import static org.junit.Assert.assertThat;
 public class InputManagerTest {
 	@Test
 	public void testNextAndHasNext() {
-		InputManager<List<Integer>, Integer> manager = new InputManager<>();
-		manager.setInputAdapter(new TestInputAdapter());
+		InputManager<List<Integer>, Integer> manager = new InputManager<>(new TestInputAdapter());
 
 		assertThat(manager.hasNext(), is(false));
 
