@@ -1,9 +1,13 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 group 'com.coalminesoftware'
-version '4.0'
+version '4.0.1'
+
+compileJava {
+    options.release.set(9)
+}
 
 repositories {
     mavenCentral()
