@@ -3,10 +3,10 @@ plugins {
 }
 
 group 'com.coalminesoftware'
-version '4.0.1'
+version '4.0.2'
 
 compileJava {
-    options.release.set(9)
+    options.release.set(8)
 }
 
 repositories {
@@ -14,8 +14,8 @@ repositories {
 }
 
 dependencies {
-    compile 'com.google.code.findbugs:jsr305:3.0.2'
-    testCompile 'junit:junit:4.12'
-    testCompile "com.google.truth:truth:1.0.1"
-    testCompile 'org.mockito:mockito-core:2.21.0'
+    api 'com.google.code.findbugs:jsr305:3.0.2'
+    testImplementation 'junit:junit:4.12'
+    testImplementation "com.google.truth:truth:1.0.1"
+    testImplementation 'org.mockito:mockito-core:2.21.0'
 }
