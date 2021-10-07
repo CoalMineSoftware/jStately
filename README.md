@@ -92,14 +92,6 @@ TransitionBuilder.forExpectedInputs(fleeingState, GameEvent.POWER_PELLET_EATEN)
         .build()
 ```
 
-Composites
----
-
-A composite state forms a collection of `State`s. It has its own entry and exit callbacks and can
-have its own transitions. Composite states can be nested. When a state machine fails to find a
-valid transition from its current state, it evaluates transitions from its state's composite,
-followed by its composite's composite, and so on.
-
 Submachines
 ---
 
@@ -122,10 +114,10 @@ Input Adapters
 --------------
 
 While using jStately, you will notice that a `StateGraph` uses generics to specify the type of
-input its transitions evaluate, but a `StateMachine` has two type parameters – `MachineInput` and
-`TransitionInput`. The Example section above creates a machine using
-`StateMachineBuilder.forMatchingInputTypes()`, which builds a machine that uses the same type for
-both.
+input its transitions evaluate, but a `StateMachine` has two type parameters – `TransitionInput`
+and `MachineInput`. The Example section above creates a machine using
+`StateMachineBuilder.forMatchingInputTypes()`, which builds a machine that uses the same type
+(`GameEvent`) for both.
 
 Alternatively, developers can provide an `InputAdapter` that the machine uses to transform its
 input into zero or more transition inputs. The `InputAdapter` interface has a single method that
@@ -166,5 +158,5 @@ Callbacks
 machine. They can be very helpful for debugging and are added to a machine using either
 `StateMachine#addEventListener()` or the corresponding call on `StateMachineBuilder`.
 
-For developers interested in logging all of the events to a `PrintStream` such as `System.out`,
+For developers interested in logging all of the events to a `PrintStream`, such as `System.out`,
 see `PrintStreamStateMachineEventListener`.
